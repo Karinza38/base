@@ -53,6 +53,9 @@ RUN install-tool bun 1.1.38
 # renovate: datasource=docker
 RUN install-tool dart 3.5.4
 
+# renovate: datasource=github-releases packageName=jetify-com/devbox
+RUN install-tool devbox 0.13.7
+
 # renovate: datasource=github-releases packageName=moby/moby
 RUN install-tool docker v27.3.1
 
@@ -60,7 +63,7 @@ RUN install-tool docker v27.3.1
 RUN install-tool dotnet 8.0.404
 
 # renovate: datasource=github-releases packageName=containerbase/flutter-prebuild
-RUN install-tool flutter 3.24.4
+RUN install-tool flutter 3.24.5
 
 # renovate: datasource=github-releases packageName=fluxcd/flux2
 RUN install-tool flux v2.4.0
@@ -69,16 +72,16 @@ RUN install-tool flux v2.4.0
 RUN install-tool git-lfs v3.6.0
 
 # renovate: datasource=github-releases packageName=gleam-lang/gleam
-RUN install-tool gleam 1.6.2
+RUN install-tool gleam 1.6.3
 
 # renovate: datasource=github-releases packageName=containerbase/golang-prebuild
-RUN install-tool golang 1.23.3
+RUN install-tool golang 1.23.4
 
 # renovate: datasource=github-releases packageName=helm/helm
 RUN install-tool helm v3.16.3
 
 # renovate: datasource=github-releases packageName=helmfile/helmfile
-RUN install-tool helmfile v0.169.1
+RUN install-tool helmfile v0.169.2
 
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
 RUN install-tool kubectl v1.31.3
@@ -96,7 +99,7 @@ RUN install-tool powershell v7.4.6
 RUN install-tool rust 1.83.0
 
 # renovate: datasource=github-releases packageName=containerbase/skopeo-prebuild
-RUN install-tool skopeo 1.16.1
+RUN install-tool skopeo 1.17.0
 
 # renovate: datasource=github-releases packageName=getsops/sops
 RUN install-tool sops v3.9.2
@@ -105,7 +108,7 @@ RUN install-tool sops v3.9.2
 RUN install-tool swift 6.0.2
 
 # renovate: datasource=docker packageName=hashicorp/terraform versioning=docker
-RUN install-tool terraform 1.10.0
+RUN install-tool terraform 1.10.1
 
 # renovate: datasource=github-releases packageName=jsonnet-bundler/jsonnet-bundler
 RUN install-tool jb v0.6.0
@@ -139,7 +142,7 @@ RUN install-tool gradle 8.11.1
 FROM build AS test-node
 
 # renovate: datasource=github-releases packageName=containerbase/node-prebuild versioning=node
-RUN install-tool node 22.11.0
+RUN install-tool node 22.12.0
 # renovate: datasource=npm
 RUN install-tool pnpm 9.14.4
 # renovate: datasource=npm packageName=@yarnpkg/cli-dist
@@ -161,12 +164,12 @@ RUN install-tool composer 2.8.3
 FROM build AS test-python
 
 # renovate: datasource=github-releases packageName=containerbase/python-prebuild
-RUN install-tool python 3.12.7
+RUN install-tool python 3.12.8
 
 # renovate: datasource=pypi
 RUN install-tool checkov 3.2.324
 # renovate: datasource=pypi
-RUN install-tool conan 2.9.3
+RUN install-tool conan 2.10.1
 # renovate: datasource=pypi
 RUN install-tool copier 9.4.1
 # renovate: datasource=pypi
@@ -176,9 +179,9 @@ RUN install-tool pipenv 2024.4.0
 # renovate: datasource=pypi
 RUN install-tool pdm 2.21.0
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool poetry 1.8.5
 # renovate: datasource=pypi
-RUN install-tool uv 0.5.5
+RUN install-tool uv 0.5.7
 
 #--------------------------------------
 # Image: test-ruby
@@ -190,7 +193,7 @@ RUN install-tool ruby 3.3.6
 # renovate: datasource=rubygems versioning=ruby
 RUN install-tool bundler 2.5.23
 # renovate: datasource=rubygems versioning=ruby
-RUN install-tool cocoapods 1.15.2
+RUN install-tool cocoapods 1.16.2
 
 #--------------------------------------
 # Image: final
