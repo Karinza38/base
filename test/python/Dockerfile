@@ -41,7 +41,7 @@ FROM base AS build
 
 # Python
 # renovate: datasource=github-releases packageName=containerbase/python-prebuild
-RUN install-tool python 3.12.7
+RUN install-tool python 3.12.8
 
 #--------------------------------------
 # build-rootless
@@ -53,7 +53,7 @@ RUN prepare-tool python conan
 USER 12021
 
 # renovate: datasource=github-releases packageName=containerbase/python-prebuild
-RUN install-tool python 3.12.7
+RUN install-tool python 3.12.8
 
 #--------------------------------------
 # build: pipenv
@@ -74,9 +74,9 @@ FROM build AS poetry
 
 
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool poetry 1.8.5
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool poetry 1.8.5
 
 USER 12021
 
@@ -107,10 +107,10 @@ FROM build-rootless AS test-poetry-a
 
 # try install again, sould skip
 # renovate: datasource=github-releases packageName=containerbase/python-prebuild
-RUN install-tool python 3.12.7
+RUN install-tool python 3.12.8
 
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool poetry 1.8.5
 
 
 SHELL [ "/bin/sh", "-c" ]
@@ -149,7 +149,7 @@ RUN install-tool poetry 1.1.15
 FROM build AS test-poetry-e
 
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool poetry 1.8.5
 
 USER 1001
 
@@ -157,7 +157,7 @@ USER 1001
 RUN install-tool python 3.10.0
 
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool poetry 1.8.5
 
 #--------------------------------------
 # test b: non-root
@@ -197,7 +197,7 @@ RUN install-tool python 3.8.13
 
 # make as latest
 # renovate: datasource=github-releases packageName=containerbase/python-prebuild
-RUN install-tool python 3.12.7
+RUN install-tool python 3.12.8
 
 # renovate: datasource=pypi
 RUN install-tool pipenv 2024.4.0
@@ -216,7 +216,7 @@ RUN prepare-tool conan
 USER 12021
 
 # renovate: datasource=pypi
-RUN install-tool conan 2.9.3
+RUN install-tool conan 2.11.0
 
 RUN set -ex; \
     cd b-conan; \
