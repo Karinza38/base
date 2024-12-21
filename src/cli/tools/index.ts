@@ -10,6 +10,7 @@ export const NoPrepareTools = [
   'composer',
   'copier',
   'corepack',
+  'devbox',
   'flux',
   'gleam',
   'gradle',
@@ -30,6 +31,7 @@ export const NoPrepareTools = [
   'skopeo',
   'sops',
   'uv',
+  'wally',
   'yarn',
   'yarn-slim',
 ];

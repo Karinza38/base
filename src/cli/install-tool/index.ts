@@ -4,6 +4,7 @@ import { ResolverMap } from '../tools';
 import { BazeliskInstallService } from '../tools/bazelisk';
 import { BunInstallService } from '../tools/bun';
 import { DartInstallService } from '../tools/dart';
+import { DevboxInstallService } from '../tools/devbox';
 import { DockerInstallService } from '../tools/docker';
 import { DotnetInstallService } from '../tools/dotnet';
 import { FlutterInstallService } from '../tools/flutter';
@@ -61,6 +62,7 @@ import {
 } from '../tools/ruby/utils';
 import { SkopeoInstallService } from '../tools/skopeo';
 import { SopsInstallService } from '../tools/sops';
+import { WallyInstallService } from '../tools/wally';
 import { logger } from '../utils';
 import { LegacyToolInstallService } from './install-legacy-tool.service';
 import { INSTALL_TOOL_TOKEN, InstallToolService } from './install-tool.service';
@@ -85,6 +87,7 @@ function prepareInstallContainer(): Container {
   container.bind(INSTALL_TOOL_TOKEN).to(CocoapodsInstallService);
   container.bind(INSTALL_TOOL_TOKEN).to(ConanInstallService);
   container.bind(INSTALL_TOOL_TOKEN).to(DartInstallService);
+  container.bind(INSTALL_TOOL_TOKEN).to(DevboxInstallService);
   container.bind(INSTALL_TOOL_TOKEN).to(DockerInstallService);
   container.bind(INSTALL_TOOL_TOKEN).to(DotnetInstallService);
   container.bind(INSTALL_TOOL_TOKEN).to(FlutterInstallService);
@@ -104,6 +107,7 @@ function prepareInstallContainer(): Container {
   container.bind(INSTALL_TOOL_TOKEN).to(RenovateInstallService);
   container.bind(INSTALL_TOOL_TOKEN).to(SkopeoInstallService);
   container.bind(INSTALL_TOOL_TOKEN).to(SopsInstallService);
+  container.bind(INSTALL_TOOL_TOKEN).to(WallyInstallService);
   container.bind(INSTALL_TOOL_TOKEN).to(YarnInstallService);
   container.bind(INSTALL_TOOL_TOKEN).to(YarnSlimInstallService);
 

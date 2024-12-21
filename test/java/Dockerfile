@@ -106,7 +106,7 @@ FROM base AS test-gradle-b
 RUN install-tool java-jre 21.0.5+11.0.LTS
 
 # renovate: datasource=gradle-version versioning=gradle
-RUN install-tool gradle 8.11.1
+RUN install-tool gradle 8.12
 
 USER 12021
 
@@ -227,6 +227,25 @@ RUN install-tool maven
 
 
 #--------------------------------------
+# test: readonly
+#--------------------------------------
+FROM base AS test-readonly
+
+RUN prepare-tool java
+
+# fake reaonly
+RUN set -ex; \
+  chmod -R g-w /opt/containerbase; \
+  chown -R root /opt/containerbase; \
+  rm -rf /tmp/containerbase; \
+  true
+
+USER 12021
+
+RUN ls -la /tmp
+RUN containerbase-cli init tool java
+
+#--------------------------------------
 # final
 #--------------------------------------
 FROM base
@@ -238,3 +257,4 @@ COPY --from=test-gradle-d /.dummy /.dummy
 COPY --from=test-maven-a /.dummy /.dummy
 COPY --from=test-others /.dummy /.dummy
 COPY --from=test-latest-version /.dummy /.dummy
+COPY --from=test-readonly /.dummy /.dummy

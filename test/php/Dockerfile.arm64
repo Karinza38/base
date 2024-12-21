@@ -38,14 +38,14 @@ ARG CONTAINERBASE_LOG_LEVEL
 FROM base AS test-php
 
 # renovate: datasource=github-releases packageName=containerbase/php-prebuild
-RUN install-tool php 8.4.1
+RUN install-tool php 8.4.2
 #--------------------------------------
 # Image: composer
 #--------------------------------------
 FROM test-php AS test-composer
 
 # renovate: datasource=github-releases packageName=containerbase/composer-prebuild
-RUN install-tool composer 2.8.3
+RUN install-tool composer 2.8.4
 
 #--------------------------------------
 # Image: final

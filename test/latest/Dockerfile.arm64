@@ -38,7 +38,7 @@ ARG CONTAINERBASE_LOG_LEVEL
 FROM base AS test-bazelisk
 
 # renovate: datasource=github-releases packageName=bazelbuild/bazelisk
-RUN install-tool bazelisk v1.24.1
+RUN install-tool bazelisk v1.25.0
 
 #--------------------------------------
 # Image: bun
@@ -46,7 +46,15 @@ RUN install-tool bazelisk v1.24.1
 FROM base AS test-bun
 
 # renovate: datasource=npm
-RUN install-tool bun 1.1.38
+RUN install-tool bun 1.1.40
+
+#--------------------------------------
+# Image: devbox
+#--------------------------------------
+FROM base AS test-devbox
+
+# renovate: datasource=github-releases packageName=jetify-com/devbox
+RUN install-tool devbox 0.13.7
 
 #--------------------------------------
 # Image: gleam
@@ -54,7 +62,7 @@ RUN install-tool bun 1.1.38
 FROM base AS test-gleam
 
 # renovate: datasource=github-releases packageName=gleam-lang/gleam
-RUN install-tool gleam 1.6.2
+RUN install-tool gleam 1.6.3
 
 #--------------------------------------
 # Image: docker
@@ -62,7 +70,7 @@ RUN install-tool gleam 1.6.2
 FROM base AS test-docker
 
 # renovate: datasource=github-releases packageName=moby/moby
-RUN install-tool docker v27.3.1
+RUN install-tool docker v27.4.1
 
 #--------------------------------------
 # Image: git
@@ -86,7 +94,7 @@ RUN install-tool git-lfs v3.6.0
 FROM base AS test-helmfile
 
 # renovate: datasource=github-releases packageName=helmfile/helmfile
-RUN install-tool helmfile v0.169.1
+RUN install-tool helmfile v0.169.2
 
 #--------------------------------------
 # Image: kustomize
@@ -102,7 +110,7 @@ RUN install-tool kustomize 5.5.0
 FROM base AS test-terraform
 
 # renovate: datasource=docker packageName=hashicorp/terraform versioning=docker
-RUN install-tool terraform 1.10.0
+RUN install-tool terraform 1.10.3
 
 #--------------------------------------
 # Image: vendir
@@ -110,7 +118,7 @@ RUN install-tool terraform 1.10.0
 FROM base AS test-vendir
 
 # renovate: datasource=github-releases packageName=vmware-tanzu/carvel-vendir
-RUN install-tool vendir v0.42.0
+RUN install-tool vendir v0.43.0
 
 #--------------------------------------
 # Image: others
@@ -118,13 +126,16 @@ RUN install-tool vendir v0.42.0
 FROM base AS test-others
 
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
-RUN install-tool kubectl v1.31.3
+RUN install-tool kubectl v1.32.0
 
 # renovate: datasource=github-releases packageName=containerbase/skopeo-prebuild
-RUN install-tool skopeo 1.16.1
+RUN install-tool skopeo 1.17.0
 
 # renovate: datasource=github-releases packageName=getsops/sops
 RUN install-tool sops v3.9.2
+
+# renovate: datasource=github-releases packageName=containerbase/wally-prebuild
+RUN install-tool wally 0.3.2
 
 #--------------------------------------
 # Image: final
@@ -133,6 +144,7 @@ FROM base
 
 COPY --from=test-bazelisk /.dummy /.dummy
 COPY --from=test-bun /.dummy /.dummy
+COPY --from=test-devbox /.dummy /.dummy
 COPY --from=test-docker /.dummy /.dummy
 COPY --from=test-git /.dummy /.dummy
 COPY --from=test-git-lfs /.dummy /.dummy
