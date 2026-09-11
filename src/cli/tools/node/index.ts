@@ -1,25 +1,19 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
 import { env as penv } from 'node:process';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { BasePrepareService } from '../../prepare-tool/base-prepare.service';
-import {
-  CompressionService,
-  EnvService,
-  HttpService,
-  PathService,
-  VersionService,
-} from '../../services';
-import { getDistro, parse } from '../../utils';
+import { codeBlock } from 'common-tags';
+import { injectFromHierarchy, injectable } from 'inversify';
+import { BasePrepareService } from '../../prepare-tool/base-prepare.service.ts';
+import { getDistro, parse } from '../../utils/index.ts';
 import {
   NodeBaseInstallService,
   prepareNpmCache,
   prepareNpmrc,
   prepareSymlinks,
-} from './utils';
+} from './utils.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class NodePrepareService extends BasePrepareService {
   override name = 'node';
   override async prepare(): Promise<void> {
@@ -36,12 +30,23 @@ export class NodePrepareService extends BasePrepareService {
         NO_UPDATE_NOTIFIER: '1',
         npm_config_update_notifier: 'false',
         npm_config_fund: 'false',
+        // node v24.6.0, v22.19.0
+        // NODE_USE_SYSTEM_CA: '1', // not compatible with --use-openssl-ca
       });
+
+      // node v6.11.0
+      await this.pathSvc.exportToolEnvContent(
+        this.name,
+        codeBlock`
+          export NODE_OPTIONS="\${NODE_OPTIONS} --use-openssl-ca"
+        `,
+      );
     }
   }
 }
 
 @injectable()
+@injectFromHierarchy()
 export class NodeInstallService extends NodeBaseInstallService {
   readonly name = 'node';
 
@@ -61,16 +66,6 @@ export class NodeInstallService extends NodeBaseInstallService {
       case 'amd64':
         return 'x86_64';
     }
-  }
-
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-    @inject(CompressionService) private compress: CompressionService,
-    @inject(VersionService) versionSvc: VersionService,
-  ) {
-    super(envSvc, pathSvc, versionSvc);
   }
 
   override async install(version: string): Promise<void> {
@@ -131,7 +126,6 @@ export class NodeInstallService extends NodeBaseInstallService {
       );
       const env = this.prepareEnv(version, tmp);
       env.PATH = `${path}/bin:${penv.PATH}`;
-      env.NODE_OPTIONS = '--use-openssl-ca';
       // update to latest node-gyp to fully support python3
       await this.updateNodeGyp(path, tmp, env, true);
       await fs.rm(tmp, { recursive: true, force: true });
@@ -150,10 +144,7 @@ export class NodeInstallService extends NodeBaseInstallService {
   override async postInstall(version: string): Promise<void> {
     const src = join(this.pathSvc.versionedToolPath(this.name, version), 'bin');
 
-    await this.shellwrapper({
-      srcDir: src,
-      args: '--use-openssl-ca',
-    });
+    await this.shellwrapper({ srcDir: src });
     await this.shellwrapper({ srcDir: src, name: 'npm' });
     await this.shellwrapper({ srcDir: src, name: 'npx' });
 
@@ -165,14 +156,10 @@ export class NodeInstallService extends NodeBaseInstallService {
   override async test(version: string): Promise<void> {
     const src = join(this.pathSvc.versionedToolPath(this.name, version), 'bin');
 
-    await execa('node', ['--version'], {
-      stdio: ['inherit', 'inherit', 1],
-    });
-    await execa('npm', ['--version'], { stdio: ['inherit', 'inherit', 1] });
+    await this._spawn('node', ['--version']);
+    await this._spawn('npm', ['--version']);
     if (await this.pathSvc.fileExists(join(src, 'corepack'))) {
-      await execa('corepack', ['--version'], {
-        stdio: ['inherit', 'inherit', 1],
-      });
+      await this._spawn('corepack', ['--version']);
     }
   }
 

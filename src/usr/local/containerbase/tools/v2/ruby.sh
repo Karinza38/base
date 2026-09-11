@@ -1,18 +1,16 @@
 #!/bin/bash
 
-export NEEDS_PREPARE=1
-
 function prepare_tool() {
   local version_codename
   local path
 
   version_codename="$(get_distro)"
   case "${version_codename}" in
-    "focal");;
     "jammy");;
     "noble");;
+    "resolute");;
     *)
-      echo "Tool '${TOOL_NAME}' not supported on: ${version_codename}! Please use ubuntu 'focal' or 'jammy'." >&2
+      echo "Tool '${TOOL_NAME}' not supported on: ${version_codename}! Please use ubuntu 'noble' or 'resolute'." >&2
       exit 1
     ;;
   esac
@@ -80,7 +78,7 @@ function init_tool () {
 }
 
 function install_tool () {
-  local arch
+  local arch=${ARCHITECTURE}
   local base_url
   local checksum_file
   local expected_checksum
@@ -93,11 +91,10 @@ function install_tool () {
 
   tool_path=$(find_tool_path)
 
-  arch=$(uname -p)
   base_url="https://github.com/containerbase/${name}-prebuild/releases/download"
   version_codename=$(get_distro)
 
-  if [[ "${version_codename}" == "noble" ]]; then
+  if [[ "${version_codename}" == "noble" || "${version_codename}" == "resolute" ]]; then
     version_codename="jammy"
   fi
 
@@ -138,8 +135,10 @@ function link_tool () {
 
   shell_wrapper ruby "${versioned_tool_path}/bin"
   shell_wrapper gem "${versioned_tool_path}/bin"
+}
 
-  [[ -n $SKIP_VERSION ]] || ruby --version
-  [[ -n $SKIP_VERSION ]] || echo "gem $(gem --version)"
-  [[ -n $SKIP_VERSION ]] || gem env
+function test_tool () {
+  ruby --version
+  echo "gem $(gem --version)"
+  gem env
 }

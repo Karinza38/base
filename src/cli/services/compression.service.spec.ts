@@ -1,18 +1,19 @@
 import type { Container } from 'inversify';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { CompressionService, rootContainer } from '.';
+import { CompressionService } from './index.ts';
+import { testContainer } from '~test/di.ts';
 
 vi.mock('execa');
 
 describe('cli/services/compression.service', () => {
   let child!: Container;
 
-  beforeEach(() => {
-    child = rootContainer.createChild();
+  beforeEach(async () => {
+    child = await testContainer();
   });
 
   test('extracts with bstar', async () => {
-    const svc = child.get(CompressionService);
+    const svc = await child.getAsync(CompressionService);
 
     await expect(
       svc.extract({ file: 'some.txz', cwd: globalThis.cacheDir }),

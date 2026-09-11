@@ -21,14 +21,14 @@ RUN install-containerbase
 
 # flutter currently needs git
 # renovate: datasource=github-tags packageName=git/git
-RUN install-tool git v2.47.1
+RUN install-tool git v2.55.0
 
 #--------------------------------------
 # Image: base
 #--------------------------------------
 FROM ${BASE_IMAGE} AS base
 
-RUN uname -p | tee | grep aarch64
+RUN arch | tee | grep aarch64
 RUN touch /.dummy
 
 ARG APT_HTTP_PROXY
@@ -42,7 +42,7 @@ ARG CONTAINERBASE_LOG_LEVEL
 FROM base AS test-flutter
 
 # renovate: datasource=github-releases packageName=containerbase/flutter-prebuild
-RUN install-tool flutter 3.24.4
+RUN install-tool flutter 3.47.3
 
 #--------------------------------------
 # Image: final

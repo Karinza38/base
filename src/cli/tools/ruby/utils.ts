@@ -3,23 +3,20 @@ import { join } from 'node:path';
 import { isNonEmptyStringAndNotWhitespace } from '@sindresorhus/is';
 import { execa } from 'execa';
 import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../../install-tool/base-install.service';
-import { ToolVersionResolver } from '../../install-tool/tool-version-resolver';
-import { EnvService, PathService, VersionService } from '../../services';
-import { logger } from '../../utils';
-import { RubyGemJson } from './schema';
+import { BaseInstallService } from '../../install-tool/base-install.service.ts';
+import { ToolVersionResolver } from '../../install-tool/tool-version-resolver.ts';
+import { VersionService } from '../../services/index.ts';
+import { logger } from '../../utils/index.ts';
+import { RubyGemJson } from './schema.ts';
 
 const defaultRegistry = 'https://rubygems.org/';
 
 @injectable()
 export abstract class RubyBaseInstallService extends BaseInstallService {
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(VersionService) protected versionSvc: VersionService,
-  ) {
-    super(pathSvc, envSvc);
-  }
+  @inject(VersionService)
+  protected readonly versionSvc!: VersionService;
+
+  override readonly parent = 'ruby';
 
   override async install(version: string): Promise<void> {
     const env: NodeJS.ProcessEnv = {};
@@ -110,15 +107,7 @@ export abstract class RubyBaseInstallService extends BaseInstallService {
   }
 
   override async test(_version: string): Promise<void> {
-    await execa(this.name, ['--version'], { stdio: 'inherit' });
-  }
-
-  override async validate(version: string): Promise<boolean> {
-    if (!(await super.validate(version))) {
-      return false;
-    }
-
-    return (await this.versionSvc.find('ruby')) !== null;
+    await this._spawn(this.name, ['--version']);
   }
 
   protected _postInstall(
@@ -137,12 +126,12 @@ export abstract class RubyBaseInstallService extends BaseInstallService {
   }
 
   private async getRubyVersion(): Promise<string> {
-    const rubyVersion = await this.versionSvc.find('ruby');
+    const rubyVersion = await this.versionSvc.getCurrent('ruby');
 
     if (!rubyVersion) {
       throw new Error('Ruby not installed');
     }
-    return rubyVersion;
+    return rubyVersion.tool.version;
   }
 
   private getGemSpec(version: string, ruby: string): string {

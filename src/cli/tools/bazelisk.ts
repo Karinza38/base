@@ -1,21 +1,12 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../install-tool/base-install.service';
-import { EnvService, HttpService, PathService } from '../services';
+import { injectFromHierarchy, injectable } from 'inversify';
+import { BaseInstallService } from '../install-tool/base-install.service.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class BazeliskInstallService extends BaseInstallService {
   readonly name = 'bazelisk';
-
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-  ) {
-    super(pathSvc, envSvc);
-  }
 
   override async install(version: string): Promise<void> {
     const baseurl = `https://github.com/bazelbuild/bazelisk/releases/download/v${version}/`;
@@ -38,6 +29,7 @@ export class BazeliskInstallService extends BaseInstallService {
     await this.pathSvc.setOwner({
       path: binarypath,
     });
+    await fs.symlink(binarypath, join(path, 'bazel'));
   }
 
   override async link(version: string): Promise<void> {
@@ -46,13 +38,13 @@ export class BazeliskInstallService extends BaseInstallService {
     await this.shellwrapper({
       srcDir: src,
     });
-    await fs.symlink(
-      join(this.pathSvc.binDir, 'bazelisk'),
-      join(this.pathSvc.binDir, 'bazel'),
-    );
+    await this.shellwrapper({
+      name: 'bazel',
+      srcDir: src,
+    });
   }
 
   override async test(_version: string): Promise<void> {
-    await execa('bazelisk', ['version'], { stdio: ['inherit', 'inherit', 1] });
+    await this._spawn('bazelisk', ['version']);
   }
 }

@@ -1,8 +1,8 @@
 import { arch } from 'node:os';
 import { join } from 'node:path';
 import { env, geteuid } from 'node:process';
-import { injectable } from 'inversify';
-import { type Arch, logger } from '../utils';
+import { bindingScopeValues, injectable } from 'inversify';
+import { type Arch, logger } from '../utils/index.ts';
 
 export type Replacements = [string, string][];
 
@@ -14,7 +14,7 @@ const compare = (() => {
   return (a: string, b: string) => collator.compare(a, b);
 })();
 
-@injectable()
+@injectable(bindingScopeValues.Singleton)
 export class EnvService {
   readonly arch: Arch;
   private uid: number;
@@ -121,11 +121,9 @@ export class EnvService {
   }
 
   public isToolIgnored(tool: string): boolean {
-    if (!this.ignoredTools) {
-      this.ignoredTools = new Set(
-        (env.IGNORED_TOOLS ?? '').toUpperCase().split(','),
-      );
-    }
+    this.ignoredTools ??= new Set(
+      (env.IGNORED_TOOLS ?? '').toUpperCase().split(','),
+    );
 
     return this.ignoredTools.has(tool.toUpperCase());
   }

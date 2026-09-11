@@ -44,10 +44,10 @@ RUN set -ex; ls -la $USER_HOME/; test -L $USER_HOME/.cargo
 FROM base AS build
 
 # renovate: datasource=docker versioning=docker
-RUN install-tool rust 1.83.0
+RUN install-tool rust 1.97.1
 
 # renovate: datasource=docker versioning=docker
-RUN install-tool rust 1.83.0
+RUN install-tool rust 1.97.1
 
 
 USER 12021
@@ -74,7 +74,7 @@ FROM base AS testb
 USER 12021
 
 # renovate: datasource=docker versioning=docker
-RUN install-tool rust 1.83.0
+RUN install-tool rust 1.97.1
 
 RUN set -ex; \
     cd a; \
@@ -91,9 +91,51 @@ RUN set -ex; \
   true
 
 #--------------------------------------
+# test c: beta
+#--------------------------------------
+FROM base AS testc
+
+USER 12021
+
+RUN install-tool rust beta
+
+SHELL [ "/bin/sh", "-c" ]
+RUN rustc --version
+RUN cargo --version
+
+#--------------------------------------
+# test d: nightly
+#--------------------------------------
+FROM base AS testd
+
+USER 12021
+
+RUN install-tool rust nightly
+
+SHELL [ "/bin/sh", "-c" ]
+RUN rustc --version
+RUN cargo --version
+
+#--------------------------------------
+# test e: nightly with date
+#--------------------------------------
+FROM base AS teste
+
+USER 12021
+
+RUN install-tool rust nightly-2026-06-19
+
+SHELL [ "/bin/sh", "-c" ]
+RUN rustc --version
+RUN cargo --version
+
+#--------------------------------------
 # final
 #--------------------------------------
 FROM base
 
 COPY --from=testa /.dummy /.dummy
 COPY --from=testb /.dummy /.dummy
+COPY --from=testc /.dummy /.dummy
+COPY --from=testd /.dummy /.dummy
+COPY --from=teste /.dummy /.dummy

@@ -1,0 +1,26 @@
+import { env } from 'node:process';
+import { defineConfig } from 'vitest/config';
+
+const ci = !!env.CI;
+
+export default defineConfig({
+  test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ci
+        ? ['lcovonly', 'text']
+        : ['@containerbase/istanbul-reports-html', 'text'],
+      include: ['src/cli/**/*.ts', '!**/__mocks__/**', '!**/types.ts'],
+    },
+    reporters: ci
+      ? ['default', 'github-actions', 'junit']
+      : ['default', 'html'],
+    mockReset: true,
+    restoreMocks: true,
+    setupFiles: './test/global-setup.ts',
+    deps: { moduleDirectories: ['node_modules', '.yarn/'] },
+  },
+  resolve: {
+    tsconfigPaths: true,
+  },
+});

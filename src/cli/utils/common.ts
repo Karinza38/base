@@ -1,9 +1,9 @@
 import fs, { readFile, stat } from 'node:fs/promises';
 import os from 'node:os';
-import { argv0, exit } from 'node:process';
+import process from 'node:process';
 import { deleteAsync } from 'del';
-import { logger } from './logger';
-import type { CliMode, Distro } from './types';
+import { logger } from './logger.ts';
+import type { CliMode, Distro } from './types.ts';
 
 let distro: undefined | Promise<Distro>;
 let isDocker: undefined | Promise<boolean>;
@@ -11,26 +11,27 @@ let isDocker: undefined | Promise<boolean>;
 export async function validateSystem(): Promise<void> {
   if (os.platform() !== 'linux') {
     logger.fatal(`Unsupported platform: ${os.platform()}! Please use Linux.`);
-    exit(1);
+    process.exit(1);
   }
   if (os.arch() !== 'x64' && os.arch() !== 'arm64') {
     logger.fatal(
       `Unsupported architecture: ${os.arch()}! Please use 'x64' or 'arm64'.`,
     );
-    exit(1);
+    process.exit(1);
   }
   const d = await (distro ??= readDistro());
   switch (d.versionCode) {
-    case 'focal':
+    /* v8 ignore next -- hard to test */
     case 'jammy':
     case 'noble':
+    case 'resolute':
       break;
     default:
       logger.fatal(
         { distro: d },
-        `Unsupported distro: ${d.versionCode}! Please use Ubuntu 'focal', 'jammy' or 'noble'.`,
+        `Unsupported distro: ${d.versionCode}! Please use Ubuntu 'noble' or 'resolute'.`,
       );
-      exit(1);
+      process.exit(1);
   }
 }
 
@@ -43,11 +44,12 @@ export async function getDistro(): Promise<Distro> {
  * @private
  * @internal
  */
-/* c8 ignore next 3 */
+/* v8 ignore start */
 export function reset(): void {
   distro = undefined;
   isDocker = undefined;
 }
+/* v8 ignore stop */
 
 async function readDistro(): Promise<Distro> {
   const data = await readFile('/etc/os-release', { encoding: 'utf-8' });
@@ -71,7 +73,7 @@ async function readDistro(): Promise<Distro> {
 export const fileRights =
   fs.constants.S_IRWXU | fs.constants.S_IRWXG | fs.constants.S_IRWXO;
 
-export type PathType = 'file' | 'dir' | 'symlink';
+export type PathType = 'file' | 'dir' | 'symlink' | 'socket';
 
 export async function pathExists(
   filePath: string,
@@ -86,6 +88,8 @@ export async function pathExists(
         return fstat.isDirectory();
       case 'symlink':
         return fstat.isSymbolicLink();
+      case 'socket':
+        return fstat.isSocket();
     }
     return !!fstat;
   } catch {
@@ -102,7 +106,9 @@ export function parseBinaryName(
     return mode;
   }
 
-  return argv0.endsWith('/node') || argv0 === 'node' ? `${node} ${app}` : argv0;
+  return process.argv0.endsWith('/node') || process.argv0 === 'node'
+    ? `${node} ${app}`
+    : process.argv0;
 }
 
 export async function cleanAptFiles(dryRun = false): Promise<void> {
@@ -116,7 +122,7 @@ export async function cleanTmpFiles(
   tmp: string,
   dryRun = false,
 ): Promise<void> {
-  await deleteAsync([`**`, `!containerbase/**`], {
+  await deleteAsync(['**', '!containerbase/**'], {
     dot: true,
     dryRun,
     force: true,

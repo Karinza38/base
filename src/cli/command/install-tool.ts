@@ -1,16 +1,14 @@
 import { isNonEmptyStringAndNotWhitespace } from '@sindresorhus/is';
 import { Command, Option } from 'clipanion';
 import prettyMilliseconds from 'pretty-ms';
-import {
-  type InstallToolType,
-  installTool,
-  resolveVersion,
-} from '../install-tool';
-import { DeprecatedTools, ResolverMap } from '../tools';
-import { logger } from '../utils';
-import { MissingVersion } from '../utils/codes';
-import { getVersion, isToolIgnored } from './utils';
+import { installTool, resolveVersion } from '../install-tool/index.ts';
+import { DeprecatedTools, ResolverMap } from '../tools/index.ts';
+import type { InstallToolType } from '../utils';
+import { MissingVersion } from '../utils/codes.ts';
+import { logger } from '../utils/index.ts';
+import { command, getVersion, isToolIgnored } from './utils.ts';
 
+@command('containerbase-cli')
 export class InstallToolCommand extends Command {
   static override paths = [['install', 'tool'], ['it']];
 
@@ -37,7 +35,7 @@ export class InstallToolCommand extends Command {
   override async execute(): Promise<number | void> {
     const start = Date.now();
 
-    if (isToolIgnored(this.name)) {
+    if (await isToolIgnored(this.name)) {
       logger.info({ tool: this.name }, 'tool ignored');
       return 0;
     }
@@ -73,7 +71,11 @@ export class InstallToolCommand extends Command {
     let error = false;
     logger.info(`Installing ${type ?? 'tool'} ${this.name}@${version}...`);
     try {
-      return await installTool(this.name, version, this.dryRun, type);
+      const res = await installTool(this.name, version, this.dryRun, type);
+      if (res) {
+        error = true;
+      }
+      return res;
     } catch (err) {
       error = true;
       logger.debug(err);
@@ -81,6 +83,7 @@ export class InstallToolCommand extends Command {
         logger.error(err.message);
       }
       return 1;
+      /* v8 ignore next -- coverage bug */
     } finally {
       if (error) {
         logger.fatal(
@@ -95,6 +98,7 @@ export class InstallToolCommand extends Command {
   }
 }
 
+@command('install-tool')
 export class InstallToolShortCommand extends InstallToolCommand {
   static override paths = [Command.Default];
   static override usage = Command.Usage({

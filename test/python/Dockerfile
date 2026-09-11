@@ -41,7 +41,7 @@ FROM base AS build
 
 # Python
 # renovate: datasource=github-releases packageName=containerbase/python-prebuild
-RUN install-tool python 3.12.7
+RUN install-tool python 3.14.7
 
 #--------------------------------------
 # build-rootless
@@ -53,7 +53,7 @@ RUN prepare-tool python conan
 USER 12021
 
 # renovate: datasource=github-releases packageName=containerbase/python-prebuild
-RUN install-tool python 3.12.7
+RUN install-tool python 3.14.7
 
 #--------------------------------------
 # build: pipenv
@@ -61,9 +61,9 @@ RUN install-tool python 3.12.7
 FROM build AS pipenv
 
 # renovate: datasource=pypi
-RUN install-tool pipenv 2024.4.0
+RUN install-tool pipenv 2026.7.1
 # renovate: datasource=pypi
-RUN install-tool pipenv 2024.4.0
+RUN install-tool pipenv 2026.7.1
 
 USER 12021
 
@@ -74,9 +74,9 @@ FROM build AS poetry
 
 
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool poetry 2.4.3
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool poetry 2.4.3
 
 USER 12021
 
@@ -86,7 +86,7 @@ USER 12021
 FROM build AS test-pip-tools-a
 
 # renovate: datasource=pypi
-RUN install-tool pip-tools 7.4.1
+RUN install-tool pip-tools 7.6.0
 
 #--------------------------------------
 # test pip-tools-b: pip-tools (older python)
@@ -97,8 +97,8 @@ FROM base AS test-pip-tools-b
 # so make sure we can still install on an older version
 RUN install-tool python 3.8.18
 
-# renovate: datasource=pypi
-RUN install-tool pip-tools 7.4.1
+# v7.5.3+ needs python 3.9+
+RUN install-tool pip-tools 7.5.2
 
 #--------------------------------------
 # test poetry-a: (rootless)
@@ -107,10 +107,10 @@ FROM build-rootless AS test-poetry-a
 
 # try install again, sould skip
 # renovate: datasource=github-releases packageName=containerbase/python-prebuild
-RUN install-tool python 3.12.7
+RUN install-tool python 3.14.7
 
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool poetry 2.4.3
 
 
 SHELL [ "/bin/sh", "-c" ]
@@ -137,11 +137,18 @@ RUN set -ex; cd d-poetry && poetry update --lock --no-interaction pytest
 #--------------------------------------
 FROM base AS test-poetry-d
 
-# python 3.12+ not supported
+# python 3.12+ not supported for poetry <1.7
 RUN install-tool python 3.11.6
 
 RUN install-tool poetry 0.12.17
 RUN install-tool poetry 1.1.15
+
+# python 3.14+ not supported for poetry <2
+RUN install-tool python 3.13.6
+
+RUN install-tool poetry 1.8.5
+
+RUN set -ex; cd d-poetry && poetry update --lock --no-interaction pytest
 
 #--------------------------------------
 # poetry test e: root install - non root install
@@ -149,7 +156,7 @@ RUN install-tool poetry 1.1.15
 FROM build AS test-poetry-e
 
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool poetry 2.4.3
 
 USER 1001
 
@@ -157,7 +164,7 @@ USER 1001
 RUN install-tool python 3.10.0
 
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool poetry 2.4.3
 
 #--------------------------------------
 # test b: non-root
@@ -165,7 +172,7 @@ RUN install-tool poetry 1.8.4
 FROM build-rootless AS testb
 
 # renovate: datasource=pypi
-RUN install-tool hashin 1.0.3
+RUN install-tool hashin 1.0.5
 
 RUN set -ex \
   && cd f \
@@ -193,17 +200,17 @@ RUN set -ex; \
 FROM build-rootless AS test-pipenv-b
 
 # Do not update minor
-RUN install-tool python 3.8.13
+RUN install-tool python 3.10.17
 
 # make as latest
 # renovate: datasource=github-releases packageName=containerbase/python-prebuild
-RUN install-tool python 3.12.7
+RUN install-tool python 3.14.7
 
 # renovate: datasource=pypi
-RUN install-tool pipenv 2024.4.0
+RUN install-tool pipenv 2026.7.1
 
 RUN set -ex; \
-  cd h-pipenv; \
+  cd pipenv-b; \
   pipenv lock;
 
 #--------------------------------------
@@ -216,7 +223,7 @@ RUN prepare-tool conan
 USER 12021
 
 # renovate: datasource=pypi
-RUN install-tool conan 2.9.3
+RUN install-tool conan 2.31.2
 
 RUN set -ex; \
     cd b-conan; \
@@ -234,6 +241,7 @@ RUN install-tool conan
 RUN install-pip checkov
 RUN install-pip copier
 RUN install-pip hashin
+RUN install-pip kas
 RUN install-pip pdm
 RUN install-pip pip-tools
 RUN install-pip pipenv

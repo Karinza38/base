@@ -1,48 +1,25 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
 import { isNonEmptyStringAndNotWhitespace } from '@sindresorhus/is';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../../install-tool/base-install.service';
-import { ToolVersionResolver } from '../../install-tool/tool-version-resolver';
-import { BasePrepareService } from '../../prepare-tool/base-prepare.service';
-import {
-  AptService,
-  CompressionService,
-  EnvService,
-  HttpService,
-  PathService,
-} from '../../services';
-import { getDistro, logger } from '../../utils';
+import { inject, injectFromHierarchy, injectable } from 'inversify';
+import { BaseInstallService } from '../../install-tool/base-install.service.ts';
+import { ToolVersionResolver } from '../../install-tool/tool-version-resolver.ts';
+import { BasePrepareService } from '../../prepare-tool/base-prepare.service.ts';
+import { AptService } from '../../services/index.ts';
+import { getDistro, logger } from '../../utils/index.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class PhpPrepareService extends BasePrepareService {
-  override readonly name = 'php';
+  @inject(AptService)
+  private readonly aptSvc!: AptService;
 
-  constructor(
-    @inject(PathService) pathSvc: PathService,
-    @inject(EnvService) envSvc: EnvService,
-    @inject(AptService) private readonly aptSvc: AptService,
-  ) {
-    super(pathSvc, envSvc);
-  }
+  override readonly name = 'php';
 
   override async prepare(): Promise<void> {
     const distro = await getDistro();
 
     switch (distro.versionCode) {
-      case 'focal':
-        await this.aptSvc.install(
-          'libjpeg-turbo8',
-          'libmcrypt4',
-          'libonig5',
-          'libpng16-16',
-          'libtidy5deb1',
-          'libxslt1.1',
-          'libzip5',
-        );
-        break;
-
       case 'jammy':
       case 'noble':
         await this.aptSvc.install(
@@ -57,6 +34,18 @@ export class PhpPrepareService extends BasePrepareService {
 
         break;
 
+      case 'resolute':
+        await this.aptSvc.install(
+          'libjpeg-turbo8',
+          'libmcrypt4',
+          'libonig5',
+          'libpng16-16t64',
+          'libtidy58',
+          'libxslt1.1',
+          'libzip5',
+        );
+
+        break;
       default:
         throw new Error(`Unsupported distro version: ${distro.versionCode}`);
     }
@@ -64,6 +53,7 @@ export class PhpPrepareService extends BasePrepareService {
 }
 
 @injectable()
+@injectFromHierarchy()
 export class PhpInstallService extends BaseInstallService {
   readonly name = 'php';
 
@@ -74,15 +64,6 @@ export class PhpInstallService extends BaseInstallService {
       case 'amd64':
         return 'x86_64';
     }
-  }
-
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-    @inject(CompressionService) private compress: CompressionService,
-  ) {
-    super(pathSvc, envSvc);
   }
 
   override async install(version: string): Promise<void> {
@@ -128,9 +109,7 @@ export class PhpInstallService extends BaseInstallService {
   }
 
   override async test(_version: string): Promise<void> {
-    await execa('php', ['--version'], {
-      stdio: ['inherit', 'inherit', 1],
-    });
+    await this._spawn('php', ['--version']);
   }
 
   private async getChecksum(checksumFileUrl: string): Promise<string> {
@@ -141,6 +120,7 @@ export class PhpInstallService extends BaseInstallService {
 }
 
 @injectable()
+@injectFromHierarchy()
 export class PhpVersionResolver extends ToolVersionResolver {
   readonly tool = 'php';
 

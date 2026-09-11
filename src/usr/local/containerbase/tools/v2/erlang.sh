@@ -2,8 +2,6 @@
 
 SEMVER_REGEX_ERLANG="^(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))?(\.(0|[1-9][0-9]*))?(\.(0|[1-9][0-9]*))?(\+[0-9]+)?([a-z-].*)?$"
 
-export NEEDS_PREPARE=1
-
 function check_semver_erlang () {
   if [[ ! "${1}" =~ ${SEMVER_REGEX_ERLANG} ]]; then
     echo Not a semver like version - aborting: "${1}"
@@ -25,11 +23,11 @@ function check_tool_requirements () {
   local version_codename
   version_codename="$(get_distro)"
   case "${version_codename}" in
-    "focal");;
     "jammy");;
     "noble");;
+    "resolute");;
     *)
-      echo "Tool '${TOOL_NAME}' not supported on: ${version_codename}! Please use ubuntu 'focal' or 'jammy'." >&2
+      echo "Tool '${TOOL_NAME}' not supported on: ${version_codename}! Please use ubuntu 'noble' or 'resolute'." >&2
       exit 1
     ;;
   esac
@@ -61,7 +59,7 @@ function install_tool () {
   base_url="https://github.com/containerbase/${name}-prebuild/releases/download"
   version_codename=$(get_distro)
 
-  if [[ "${version_codename}" == "noble" ]]; then
+  if [[ "${version_codename}" == "noble" || "${version_codename}" == "resolute" ]]; then
     version_codename="jammy"
   fi
 
@@ -97,5 +95,8 @@ function link_tool () {
   # only works for v24+
   #export_tool_env ERL_ROOTDIR "${versioned_tool_path}"
   shell_wrapper erl "${versioned_tool_path}/bin"
+}
+
+test_tool () {
   erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().' -noshell
 }

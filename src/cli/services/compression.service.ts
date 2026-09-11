@@ -1,6 +1,6 @@
 import { execa } from 'execa';
 import { inject, injectable } from 'inversify';
-import { EnvService } from './env.service';
+import { EnvService } from './env.service.ts';
 
 export interface ExtractConfig {
   file: string;
@@ -17,7 +17,9 @@ export interface ExtractConfig {
 
 @injectable()
 export class CompressionService {
-  constructor(@inject(EnvService) private readonly envSvc: EnvService) {}
+  @inject(EnvService)
+  private readonly envSvc!: EnvService;
+
   async extract({
     file,
     cwd,

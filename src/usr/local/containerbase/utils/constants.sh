@@ -32,6 +32,12 @@ export CONTAINERBASE_DIR=/usr/local/containerbase
 export CONTAINERBASE_VAR_DIR=/var/lib/containerbase
 export CONTAINERBASE_TMP_DIR=/tmp/containerbase
 
-# Used to find matching tool downloads
-ARCHITECTURE=$(uname -p)
+# Used to find matching tool downloads.
+# `arch` is preinstalled on ubuntu.
+ARCHITECTURE=$(arch)
 export ARCHITECTURE
+
+# Used in util.sh and others.
+# shellcheck source=/dev/null
+DISTRO_CODENAME=$(. /etc/os-release && echo "${VERSION_CODENAME}")
+export DISTRO_CODENAME

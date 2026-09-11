@@ -2,12 +2,13 @@ import { rm, writeFile } from 'fs/promises';
 import { join } from 'node:path';
 import { execa } from 'execa';
 import { inject, injectable } from 'inversify';
-import { logger } from '../utils';
-import { EnvService } from './env.service';
+import { logger } from '../utils/index.ts';
+import { EnvService } from './env.service.ts';
 
 @injectable()
 export class AptService {
-  constructor(@inject(EnvService) private readonly envSvc: EnvService) {}
+  @inject(EnvService)
+  private readonly envSvc!: EnvService;
 
   async install(...packages: string[]): Promise<void> {
     const todo: string[] = [];

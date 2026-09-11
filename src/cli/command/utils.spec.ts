@@ -1,12 +1,12 @@
 import { env } from 'node:process';
 import { beforeEach, describe, expect, test } from 'vitest';
-import { getVersion, isToolIgnored } from './utils';
+import { getVersion, isToolIgnored } from './utils.ts';
 
 describe('cli/command/utils', () => {
   beforeEach(() => {
     delete env.NODE_VERSION;
     delete env.DEL_CLI_VERSION;
-    delete env.IGNORED_TOOLS;
+    env.IGNORED_TOOLS = 'php,pnpm';
   });
 
   test('getVersion', () => {
@@ -17,10 +17,9 @@ describe('cli/command/utils', () => {
     expect(getVersion('del-cli')).toBe('1.0.1');
   });
 
-  test('isToolIgnored', () => {
-    expect(isToolIgnored('node')).toBe(false);
-    env.IGNORED_TOOLS = 'node,pnpm';
-    expect(isToolIgnored('node')).toBe(true);
-    expect(isToolIgnored('php')).toBe(false);
+  test('isToolIgnored', async () => {
+    expect(await isToolIgnored('node')).toBe(false);
+    expect(await isToolIgnored('pnpm')).toBe(true);
+    expect(await isToolIgnored('php')).toBe(true);
   });
 });

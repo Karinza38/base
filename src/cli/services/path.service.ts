@@ -2,9 +2,9 @@ import fs from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { env } from 'node:process';
 import { isNonEmptyStringAndNotWhitespace } from '@sindresorhus/is';
-import { inject, injectable } from 'inversify';
-import { fileRights, logger, pathExists, tool2path } from '../utils';
-import { EnvService } from './env.service';
+import { bindingScopeValues, inject, injectable } from 'inversify';
+import { fileRights, logger, pathExists, tool2path } from '../utils/index.ts';
+import { EnvService } from './env.service.ts';
 
 export interface FileOwnerConfig {
   /**
@@ -14,8 +14,11 @@ export interface FileOwnerConfig {
   mode?: number;
 }
 
-@injectable()
+@injectable(bindingScopeValues.Singleton)
 export class PathService {
+  @inject(EnvService)
+  private readonly envSvc!: EnvService;
+
   /**
    * Path to `/tmp/containerbase/tool.init.d`.
    */
@@ -41,6 +44,13 @@ export class PathService {
    */
   get cachePath(): string {
     return join(this.tmpDir, 'cache');
+  }
+
+  /**
+   * Path to `/opt/containerbase/data`.
+   */
+  get dataPath(): string {
+    return join(this.installDir, 'data');
   }
 
   get envFile(): string {
@@ -96,8 +106,6 @@ export class PathService {
     return join(this.installDir, 'versions');
   }
 
-  constructor(@inject(EnvService) private envSvc: EnvService) {}
-
   async createDir(path: string, mode = 0o775): Promise<void> {
     if (await pathExists(path)) {
       return;
@@ -130,6 +138,7 @@ export class PathService {
       throw new Error('System not initialized for containerbase');
     }
     await this.createDir(this._toolPrepPath);
+    await this.createDir(this.dataPath);
     await this.createDir(this.toolsPath);
     await this.createDir(this.versionPath);
     await this.createDir(this.binDir);
@@ -137,7 +146,7 @@ export class PathService {
     await this.createDir(this._toolInitPath);
     await this.createDir(join(this.tmpDir, 'cache', '.cache'));
     await this.createDir(join(this.tmpDir, 'cache', '.config'));
-    await this.createDir(join(this.tmpDir, 'cache', '.local'));
+    await this.createDir(join(this.tmpDir, 'cache', '.local', 'share'));
   }
 
   async ensureToolPath(tool: string): Promise<string> {
@@ -205,7 +214,9 @@ export class PathService {
   }
 
   async setInitialized(tool: string): Promise<void> {
-    await fs.writeFile(this.toolInitPath(tool), '');
+    const path = this.toolInitPath(tool);
+    await fs.writeFile(path, '');
+    await this.setOwner({ path });
   }
 
   async setPrepared(tool: string): Promise<void> {

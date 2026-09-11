@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export NEEDS_PREPARE=1
-
 function prepare_tool() {
   local cargo_home
 
@@ -25,18 +23,30 @@ function init_tool () {
   chown -R "${USER_ID}" "${cargo_home}"
 }
 
+function check_tool_requirements () {
+  if [[ "${TOOL_VERSION}" == "beta" || "${TOOL_VERSION}" == "nightly" || "${TOOL_VERSION}" == nightly-* ]]; then
+    # allow beta and nightly versions
+    return
+  fi
+  # Sensitive default that can be overwritten by tools if needed
+  check_semver "$TOOL_VERSION" "all"
+}
+
 function install_tool () {
   local versioned_tool_path
   local file
-  local arch
+  local arch=${ARCHITECTURE}
   local base_url
   local checksum_file
   local expected_checksum
   local ext=gz
   local file_name
 
-  arch=$(uname -p)
   file_name="rust-${TOOL_VERSION}-${arch}-unknown-linux-gnu.tar"
+  if [[ "${TOOL_VERSION}" == nightly-* ]]; then
+    NIGHTLY_DATE="${TOOL_VERSION#nightly-}"
+    file_name="${NIGHTLY_DATE}/rust-nightly-${arch}-unknown-linux-gnu.tar"
+  fi
   base_url="https://static.rust-lang.org/dist/${file_name}"
 
   # not all releases have checksums
@@ -55,7 +65,7 @@ function install_tool () {
   mkdir -p "${TEMP_DIR}/rust"
   bsdtar --strip 1 -C "${TEMP_DIR}/rust" -xf "${file}"
   versioned_tool_path=$(create_versioned_tool_path)
-  "${TEMP_DIR}/rust/install.sh" --prefix="$versioned_tool_path" --components=cargo,rust-std-"${arch}"-unknown-linux-gnu,rustc
+  "${TEMP_DIR}/rust/install.sh" --prefix="$versioned_tool_path" --components="cargo,rust-std-${arch}-unknown-linux-gnu,rustc"
   rm -rf "${TEMP_DIR}/rust"
 }
 
@@ -65,7 +75,9 @@ function link_tool () {
 
   shell_wrapper "cargo" "${versioned_tool_path}/bin"
   shell_wrapper "rustc" "${versioned_tool_path}/bin"
+}
 
-  [[ -n $SKIP_VERSION ]] || cargo --version
-  [[ -n $SKIP_VERSION ]] || rustc --version
+function test_tool () {
+  cargo --version
+  rustc --version
 }

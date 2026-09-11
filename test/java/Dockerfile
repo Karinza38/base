@@ -21,7 +21,7 @@ RUN install-containerbase
 
 # Used for tests
 # renovate: datasource=github-tags packageName=git/git
-RUN install-tool git v2.47.1
+RUN install-tool git v2.55.0
 
 #--------------------------------------
 # Image: base
@@ -58,8 +58,8 @@ RUN set -ex; \
 
 RUN [ "$(find /tmp -mindepth 1 -maxdepth 1 | wc -l)" -eq 1 ]
 
-# renovate: datasource=java-version packageName=java-jre
-RUN install-tool java 21.0.5+11.0.LTS
+# renovate: datasource=java-version packageName=java-jre?os=linux&architecture=x64
+RUN install-tool java 25.0.4+101.0.LTS
 
 RUN set -ex; \
   ls -la /tmp; \
@@ -98,15 +98,15 @@ RUN set -ex; \
 RUN gradle --version
 
 #--------------------------------------
-# test: Java 21 LTS + Gradle 8
+# test: Java 21 LTS + Gradle 9
 #--------------------------------------
 FROM base AS test-gradle-b
 
-# renovate: datasource=java-version packageName=java-jre
-RUN install-tool java-jre 21.0.5+11.0.LTS
+# renovate: datasource=java-version packageName=java-jre?os=linux&architecture=x64
+RUN install-tool java-jre 21.0.12+101.0.LTS
 
 # renovate: datasource=gradle-version versioning=gradle
-RUN install-tool gradle 8.11.1
+RUN install-tool gradle 9.7.1
 
 USER 12021
 
@@ -156,8 +156,8 @@ RUN prepare-tool java gradle
 # test openshift userid missmatch
 USER 1001
 
-# renovate: datasource=java-version depName=java
-ARG JAVA_JDK_VERSION=21.0.5+11.0.LTS
+# renovate: datasource=java-version depName=java packageName=java?os=linux&architecture=x64
+ARG JAVA_JDK_VERSION=17.0.20+101
 RUN install-tool java-jdk
 
 # test latest gradle
@@ -167,6 +167,32 @@ RUN gradle --version
 
 # fail if java version mismatch
 RUN gradle --version | grep "${JAVA_VERSION}"
+
+#--------------------------------------
+# test: Java 21 LTS + Gradle 8
+#--------------------------------------
+FROM base AS test-gradle-e
+
+# renovate: datasource=java-version packageName=java-jre?os=linux&architecture=x64
+RUN install-tool java-jre 21.0.12+101.0.LTS
+
+# renovate: datasource=gradle-version versioning=gradle
+RUN install-tool gradle 8.14.5
+
+USER 12021
+
+RUN set -ex; \
+  gradle --version;
+
+RUN set -ex; \
+  git init .; \
+  touch settings.gradle; \
+  gradle wrapper; \
+  git diff; \
+  ./gradlew --version
+
+SHELL [ "/bin/sh", "-c" ]
+RUN gradle --version
 
 #--------------------------------------
 # test: maven
@@ -181,8 +207,8 @@ USER 1001
 
 RUN install-tool maven 3.5.4
 
-# renovate: datasource=maven packageName=org.apache.maven:maven
-RUN install-tool maven 3.9.9
+# renovate: datasource=github-releases packageName=containerbase/maven-prebuild versioning=maven
+RUN install-tool maven 3.9.16
 
 RUN set -ex; \
   mkdir -p /tmp/mvn && cd /tmp/mvn; \
@@ -199,10 +225,10 @@ WORKDIR /
 
 # not required / used for sbt
 # renovate: datasource=github-releases packageName=scala/scala
-RUN install-tool scala v2.13.15
+RUN install-tool scala v2.13.16
 
 # renovate: datasource=github-releases packageName=sbt/sbt
-RUN install-tool sbt v1.10.6
+RUN install-tool sbt v1.12.15
 
 RUN install-tool gradle 8.8-rc-2
 
@@ -227,6 +253,41 @@ RUN install-tool maven
 
 
 #--------------------------------------
+# test: readonly
+#--------------------------------------
+FROM base AS test-readonly
+
+RUN prepare-tool java
+
+# fake reaonly
+RUN set -ex; \
+  chmod -R g-w /opt/containerbase; \
+  chown -R root /opt/containerbase; \
+  rm -rf /tmp/containerbase; \
+  true
+
+USER 12021
+
+RUN ls -la /tmp
+RUN containerbase-cli init tool java
+
+#--------------------------------------
+# test: android-sdk
+#--------------------------------------
+FROM build AS test-android-sdk
+
+# no version, so install latest
+RUN install-tool android-sdk-cmdline-tools
+
+USER 12021
+
+# Do no install as root, `/root/.{android,android-sdk}` folders will be removed on docker build
+RUN set -ex; \
+  yes | sdkmanager --licenses; \
+  sdkmanager "platforms;android-35"; \
+  true
+
+#--------------------------------------
 # final
 #--------------------------------------
 FROM base
@@ -235,6 +296,9 @@ COPY --from=test-gradle-a /.dummy /.dummy
 COPY --from=test-gradle-b /.dummy /.dummy
 COPY --from=test-gradle-c /.dummy /.dummy
 COPY --from=test-gradle-d /.dummy /.dummy
+COPY --from=test-gradle-e /.dummy /.dummy
 COPY --from=test-maven-a /.dummy /.dummy
 COPY --from=test-others /.dummy /.dummy
 COPY --from=test-latest-version /.dummy /.dummy
+COPY --from=test-readonly /.dummy /.dummy
+COPY --from=test-android-sdk /.dummy /.dummy

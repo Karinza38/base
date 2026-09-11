@@ -21,7 +21,7 @@ RUN install-containerbase
 
 # TODO: move to prepare
 # renovate: datasource=github-tags packageName=git/git
-RUN install-tool git v2.47.1
+RUN install-tool git v2.55.0
 
 #--------------------------------------
 # Image: base
@@ -44,7 +44,7 @@ WORKDIR /test
 FROM base AS build
 
 # renovate: datasource=docker versioning=docker
-RUN install-tool swift 6.0.2
+RUN install-tool swift 6.3.3
 
 #--------------------------------------
 # testa: swift latest

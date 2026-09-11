@@ -1,24 +1,20 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
 import { codeBlock } from 'common-tags';
-import { inject, injectable } from 'inversify';
-import { BasePrepareService } from '../../prepare-tool/base-prepare.service';
-import { AptService, EnvService, PathService } from '../../services';
-import { type Distro, getDistro } from '../../utils';
-import { PipVersionResolver } from './pip';
-import { PipBaseInstallService } from './utils';
+import { inject, injectFromHierarchy, injectable } from 'inversify';
+import { BasePrepareService } from '../../prepare-tool/base-prepare.service.ts';
+import { AptService } from '../../services/index.ts';
+import { type Distro, getDistro } from '../../utils/index.ts';
+import { PipVersionResolver } from './pip.ts';
+import { PipBaseInstallService } from './utils.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class ConanPrepareService extends BasePrepareService {
-  override readonly name: string = 'conan';
+  @inject(AptService)
+  private readonly aptSvc!: AptService;
 
-  constructor(
-    @inject(PathService) pathSvc: PathService,
-    @inject(EnvService) envSvc: EnvService,
-    @inject(AptService) private readonly aptSvc: AptService,
-  ) {
-    super(pathSvc, envSvc);
-  }
+  override readonly name: string = 'conan';
 
   override async prepare(): Promise<void> {
     await this.aptSvc.install('cmake', 'gcc', 'g++', 'make', 'perl');
@@ -51,11 +47,13 @@ export class ConanPrepareService extends BasePrepareService {
 }
 
 @injectable()
+@injectFromHierarchy()
 export class ConanInstallService extends PipBaseInstallService {
   override readonly name: string = 'conan';
 }
 
 @injectable()
+@injectFromHierarchy()
 export class ConanVersionResolver extends PipVersionResolver {
   override tool = 'conan';
 }
@@ -73,12 +71,12 @@ function getArchitecture(arch: string): string {
 
 function getCompilerVersion(distro: Distro): string {
   switch (distro.versionCode) {
-    case 'focal':
-      return '9';
     case 'jammy':
       return '11';
     case 'noble':
       return '13';
+    case 'resolute':
+      return '15';
   }
 
   throw new Error(`Unsupported distro: ${distro.name}`);

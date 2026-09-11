@@ -24,7 +24,7 @@ RUN install-containerbase
 #--------------------------------------
 FROM ${BASE_IMAGE} AS base
 
-RUN uname -p | tee | grep aarch64
+RUN arch | tee | grep aarch64
 RUN touch /.dummy
 
 ARG APT_HTTP_PROXY
@@ -38,7 +38,7 @@ ARG CONTAINERBASE_LOG_LEVEL
 FROM base AS test-bazelisk
 
 # renovate: datasource=github-releases packageName=bazelbuild/bazelisk
-RUN install-tool bazelisk v1.24.1
+RUN install-tool bazelisk v1.29.0
 
 #--------------------------------------
 # Image: bun
@@ -46,7 +46,47 @@ RUN install-tool bazelisk v1.24.1
 FROM base AS test-bun
 
 # renovate: datasource=npm
-RUN install-tool bun 1.1.38
+RUN install-tool bun 1.4.2
+
+#--------------------------------------
+# Image: deno
+#--------------------------------------
+FROM base AS test-deno
+
+# renovate: datasource=github-releases packageName=denoland/deno
+RUN install-tool deno 2.9.6
+
+#--------------------------------------
+# Image: apko
+#--------------------------------------
+FROM base AS test-apko
+
+# renovate: datasource=github-releases packageName=chainguard-dev/apko
+RUN install-tool apko 1.2.41
+
+#--------------------------------------
+# Image: apm
+#--------------------------------------
+FROM base AS test-apm
+
+# renovate: datasource=github-releases packageName=microsoft/apm
+RUN install-tool apm 0.28.0
+
+#--------------------------------------
+# Image: devbox
+#--------------------------------------
+FROM base AS test-devbox
+
+# renovate: datasource=github-releases packageName=jetify-com/devbox
+RUN install-tool devbox 0.18.0
+
+#--------------------------------------
+# Image: gh
+#--------------------------------------
+FROM base AS test-gh
+
+# renovate: datasource=github-releases packageName=cli/cli
+RUN install-tool gh v2.98.0
 
 #--------------------------------------
 # Image: gleam
@@ -54,7 +94,7 @@ RUN install-tool bun 1.1.38
 FROM base AS test-gleam
 
 # renovate: datasource=github-releases packageName=gleam-lang/gleam
-RUN install-tool gleam 1.6.2
+RUN install-tool gleam 1.18.1
 
 #--------------------------------------
 # Image: docker
@@ -62,7 +102,18 @@ RUN install-tool gleam 1.6.2
 FROM base AS test-docker
 
 # renovate: datasource=github-releases packageName=moby/moby
-RUN install-tool docker v27.3.1
+RUN install-tool docker v28.5.2
+
+# renovate: datasource=github-releases packageName=docker/buildx
+RUN install-tool buildx v0.36.1
+
+# renovate: datasource=github-releases packageName=docker/compose
+RUN install-tool docker-compose v5.3.1
+
+RUN set -ex; \
+  docker buildx version | grep github.com/docker/buildx; \
+  docker compose version | grep 'Docker Compose version'; \
+  true;
 
 #--------------------------------------
 # Image: git
@@ -70,7 +121,7 @@ RUN install-tool docker v27.3.1
 FROM base AS test-git
 
 # renovate: datasource=github-tags packageName=git/git
-RUN install-tool git v2.47.1
+RUN install-tool git v2.55.0
 
 #--------------------------------------
 # Image: git-lfs
@@ -78,7 +129,7 @@ RUN install-tool git v2.47.1
 FROM test-git AS test-git-lfs
 
 # renovate: datasource=github-releases packageName=git-lfs/git-lfs
-RUN install-tool git-lfs v3.6.0
+RUN install-tool git-lfs v3.8.0
 
 #--------------------------------------
 # Image: helmfile
@@ -86,7 +137,7 @@ RUN install-tool git-lfs v3.6.0
 FROM base AS test-helmfile
 
 # renovate: datasource=github-releases packageName=helmfile/helmfile
-RUN install-tool helmfile v0.169.1
+RUN install-tool helmfile v1.7.4
 
 #--------------------------------------
 # Image: kustomize
@@ -94,7 +145,20 @@ RUN install-tool helmfile v0.169.1
 FROM base AS test-kustomize
 
 # renovate: datasource=github-releases packageName=kubernetes-sigs/kustomize
-RUN install-tool kustomize 5.5.0
+RUN install-tool kustomize 5.8.1
+
+#--------------------------------------
+# test: mono
+#--------------------------------------
+FROM base AS test-mono
+
+# renovate: datasource=github-releases packageName=containerbase/mono-prebuild
+RUN install-tool mono 6.14.1
+
+# test version resolver
+RUN install-tool nuget
+
+RUN nuget search nuget.commandline -Take 1
 
 #--------------------------------------
 # Image: terraform
@@ -102,7 +166,15 @@ RUN install-tool kustomize 5.5.0
 FROM base AS test-terraform
 
 # renovate: datasource=docker packageName=hashicorp/terraform versioning=docker
-RUN install-tool terraform 1.10.0
+RUN install-tool terraform 1.15.9
+
+#--------------------------------------
+# Image: tofu
+#--------------------------------------
+FROM base AS test-tofu
+
+# renovate: datasource=github-releases packageName=opentofu/opentofu
+RUN install-tool tofu 1.12.6
 
 #--------------------------------------
 # Image: vendir
@@ -110,21 +182,36 @@ RUN install-tool terraform 1.10.0
 FROM base AS test-vendir
 
 # renovate: datasource=github-releases packageName=vmware-tanzu/carvel-vendir
-RUN install-tool vendir v0.42.0
+RUN install-tool vendir v0.46.1
 
 #--------------------------------------
 # Image: others
 #--------------------------------------
 FROM base AS test-others
 
+# renovate: datasource=github-releases packageName=bufbuild/buf
+RUN install-tool buf v1.72.0
+
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
-RUN install-tool kubectl v1.31.3
+RUN install-tool kubectl v1.36.3
+
+# renovate: datasource=github-releases packageName=jdx/mise
+RUN install-tool mise 2026.8.14
 
 # renovate: datasource=github-releases packageName=containerbase/skopeo-prebuild
-RUN install-tool skopeo 1.16.1
+RUN install-tool skopeo 1.24.0
 
 # renovate: datasource=github-releases packageName=getsops/sops
-RUN install-tool sops v3.9.2
+RUN install-tool sops v3.13.3
+
+# renovate: datasource=github-releases packageName=containerbase/wally-prebuild
+RUN install-tool wally 0.3.2
+
+# renovate: datasource=github-releases packageName=protocolbuffers/protobuf versioning=docker
+RUN install-tool protoc 35.1
+
+# renovate: datasource=github-releases packageName=prefix-dev/pixi
+RUN install-tool pixi v0.76.2
 
 #--------------------------------------
 # Image: final
@@ -133,13 +220,20 @@ FROM base
 
 COPY --from=test-bazelisk /.dummy /.dummy
 COPY --from=test-bun /.dummy /.dummy
+COPY --from=test-deno /.dummy /.dummy
+COPY --from=test-apko /.dummy /.dummy
+COPY --from=test-apm /.dummy /.dummy
+COPY --from=test-devbox /.dummy /.dummy
 COPY --from=test-docker /.dummy /.dummy
+COPY --from=test-gh /.dummy /.dummy
 COPY --from=test-git /.dummy /.dummy
 COPY --from=test-git-lfs /.dummy /.dummy
 COPY --from=test-gleam /.dummy /.dummy
 COPY --from=test-helmfile /.dummy /.dummy
 COPY --from=test-kustomize /.dummy /.dummy
+COPY --from=test-mono /.dummy /.dummy
 COPY --from=test-terraform /.dummy /.dummy
+COPY --from=test-tofu /.dummy /.dummy
 COPY --from=test-vendir /.dummy /.dummy
 
 COPY --from=test-others /.dummy /.dummy

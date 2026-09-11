@@ -1,15 +1,15 @@
 import { join } from 'node:path';
-import { execa } from 'execa';
-import { injectable } from 'inversify';
-import { semverSatisfies } from '../../utils';
-import { RubyBaseInstallService, RubyGemVersionResolver } from './utils';
+import { injectFromHierarchy, injectable } from 'inversify';
+import { semverSatisfies } from '../../utils/index.ts';
+import { RubyBaseInstallService, RubyGemVersionResolver } from './utils.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class CocoapodsInstallService extends RubyBaseInstallService {
   override readonly name: string = 'cocoapods';
 
   override async test(_version: string): Promise<void> {
-    await execa('pod', ['--version', '--allow-root'], { stdio: 'inherit' });
+    await this._spawn('pod', ['--version', '--allow-root']);
   }
 
   protected override async _postInstall(
@@ -23,7 +23,7 @@ export class CocoapodsInstallService extends RubyBaseInstallService {
       return;
     }
 
-    await execa(
+    await this._spawn(
       gem,
       [
         'install',
@@ -35,10 +35,10 @@ export class CocoapodsInstallService extends RubyBaseInstallService {
         '--version',
         '<7.1.0',
       ],
-      { stdio: ['inherit', 'inherit', 1], env, cwd: this.pathSvc.installDir },
+      { env },
     );
 
-    await execa(
+    await this._spawn(
       gem,
       [
         'uninstall',
@@ -50,12 +50,13 @@ export class CocoapodsInstallService extends RubyBaseInstallService {
         '--version',
         '>=7.1.0',
       ],
-      { stdio: ['inherit', 'inherit', 1], env, cwd: this.pathSvc.installDir },
+      { env },
     );
   }
 }
 
 @injectable()
+@injectFromHierarchy()
 export class CocoapodsVersionResolver extends RubyGemVersionResolver {
   override readonly tool: string = 'cocoapods';
 }

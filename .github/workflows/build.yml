@@ -2,9 +2,6 @@ name: build
 
 on:
   workflow_call:
-    secrets:
-      CODECOV_TOKEN:
-        required: false
 
 env:
   OWNER: ${{ github.repository_owner }}
@@ -12,7 +9,7 @@ env:
   BUILDKIT_PROGRESS: plain
   BUILDX_NO_DEFAULT_LOAD: 1
   CONTAINERBASE_VERSION: ${{ github.sha }}
-  APT_HTTP_PROXY: http://172.17.0.1:8000
+  APT_HTTP_PROXY: http://host.docker.internal:8000
   HUSKY: 0
 
 permissions:
@@ -20,22 +17,24 @@ permissions:
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      checks: write
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          show-progress: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
-      - name: 📥 Setup Node.js
-        uses: ./.github/actions/setup-node
+    outputs:
+      uid: ${{ steps.init.outputs.uid }}
+
+    steps:
+      - name: ⚙️ Setup
+        uses: containerbase/internal-tools/setup@e09fecf67a3d2442e4ba698ccc3d71d1f8305eb7 # v5.0.28
         with:
           save-cache: true
 
+      - name: ⚙️ Init
+        id: init
+        run: echo "uid=$(uuidgen)" >> ${GITHUB_OUTPUT}
+
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: setup
     timeout-minutes: 15
     permissions:
@@ -43,24 +42,21 @@ jobs:
       checks: write
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          show-progress: false
-
-      - name: 📥 Setup Node.js
-        uses: ./.github/actions/setup-node
+      - name: ⚙️ Setup
+        uses: containerbase/internal-tools/setup@e09fecf67a3d2442e4ba698ccc3d71d1f8305eb7 # v5.0.28
 
       - name: lint
         run: |
           pnpm eslint -f gha
           pnpm prettier
+          pnpm lint:markdown
           pnpm lint:types
 
       - name: shellcheck
         if: ${{ github.event_name != 'merge_group' }}
-        uses: reviewdog/action-shellcheck@22f96e34e9185b642c5567cc26d1df952f5c9d10 # v1.28.0
+        uses: reviewdog/action-shellcheck@0722bbdb0d47f04c1b53b8734d2422ac63a45ec6 # v1.32.1
         with:
-          fail_on_error: true
+          fail_level: any
           reporter: github-pr-annotations
           filter_mode: nofilter
           path: |
@@ -72,22 +68,18 @@ jobs:
           check_all_files_with_shebangs: 'true'
 
   bats:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: setup
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          show-progress: false
+      - name: ⚙️ Setup
+        uses: containerbase/internal-tools/setup@e09fecf67a3d2442e4ba698ccc3d71d1f8305eb7 # v5.0.28
 
       - name: Install ubuntu dependencies
         run: |
           sudo apt-get -qq update
           sudo apt-get -qq install -y libarchive-tools
-
-      - name: 📥 Setup Node.js
-        uses: ./.github/actions/setup-node
 
       - name: build
         run: pnpm build
@@ -96,135 +88,192 @@ jobs:
         run: pnpm test:bats
 
   vitest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: setup
     timeout-minutes: 15
+    permissions:
+      id-token: write
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          show-progress: false
-
-      - name: 📥 Setup Node.js
-        uses: ./.github/actions/setup-node
+      - name: ⚙️ Setup
+        uses: containerbase/internal-tools/setup@e09fecf67a3d2442e4ba698ccc3d71d1f8305eb7 # v5.0.28
 
       - name: vitest
         run: pnpm test:vitest
 
-      - name: Codecov
-        if: github.event_name != 'merge_group'
-        uses: codecov/codecov-action@015f24e6818733317a2da2edd6290ab26238649a # v5.0.7
+      - name: Codecov test results
+        if: github.event_name != 'merge_group' && !cancelled()
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
+          report_type: test_results
 
-  base:
-    runs-on: ubuntu-latest
+      - name: Codecov coverage results
+        if: github.event_name != 'merge_group'
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          use_oidc: true
+
+  build:
+    runs-on: ubuntu-24.04
     needs: setup
     timeout-minutes: 15
 
-    outputs:
-      base: ${{ steps.init.outputs.base }}
-
     steps:
-      - name: docker-config
-        uses: containerbase/internal-tools@fa96b70003f221771f8c015cd3f598818ebf4d78 # v3.5.4
-        with:
-          command: docker-config
-
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          show-progress: false
-
-      - name: init
-        id: init
-        run: |
-          export base="ttl.sh/$(uuidgen):1d"
-          echo "OWNER=${OWNER,,}" >> ${GITHUB_ENV}
-          echo "BASE=${base}" >> ${GITHUB_ENV}
-          echo "base=${base}" >> ${GITHUB_OUTPUT}
-
-      - name: 📥 Setup Node.js
-        uses: ./.github/actions/setup-node
-
-      - name: prepare apt proxy
-        uses: ./.github/actions/prepare-proxy
+      - name: ⚙️ Setup
+        uses: containerbase/internal-tools/setup@e09fecf67a3d2442e4ba698ccc3d71d1f8305eb7 # v5.0.28
 
       - name: build
         run: pnpm build
 
-      - name: test distro
-        run: docker buildx bake --set build-ttl.tags=${{env.BASE}} build-ttl
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # CONTAINERBASE_CDN: ${{ vars.CONTAINERBASE_CDN }}
+      - name: upload dist
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: |
+            dist/
+
+  base:
+    runs-on: ${{ matrix.arch.os }}
+    name: base (${{ matrix.arch.name }})
+    needs:
+      - setup
+      - build
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - name: x86_64
+            os: ubuntu-24.04
+            tag: amd64
+          - name: aarch64
+            os: ubuntu-24.04-arm
+            tag: arm64
+
+    steps:
+      - name: ⚙️ Setup
+        uses: containerbase/internal-tools/setup@e09fecf67a3d2442e4ba698ccc3d71d1f8305eb7 # v5.0.28
+        with:
+          node: false
+          apt-proxy: true
+
+      - name: Check system
+        uses: ./.github/actions/check
+
+      - name: ⚙️ Init
+        run: |
+          echo "OWNER=${OWNER,,}" >> ${GITHUB_ENV}
+          echo "BASE=ttl.sh/${{ needs.setup.outputs.uid }}/${{ matrix.arch.tag }}:1d" >> ${GITHUB_ENV}
+
+      - name: build base
+        uses: ./.github/actions/bake
+        with:
+          args: >-
+            --set build-ttl.tags=${{env.BASE}}
+            --set build-ttl.cache-to=type=gha,mode=max,scope=${{ needs.setup.outputs.uid }}-${{ matrix.arch.tag }}
+            --set settings.cache-from+=type=gha,scope=${{ needs.setup.outputs.uid }}-${{ matrix.arch.tag }}
+            build-ttl
 
   distro:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - bats
       - lint
       - vitest
+      - build
+
+    strategy:
+      fail-fast: false
+      matrix:
+        distro:
+          - jammy
+          - noble
+          - resolute
+
+    env:
+      TAG: ${{ matrix.distro }}
+
+    steps:
+      - name: ⚙️ Setup
+        uses: containerbase/internal-tools/setup@e09fecf67a3d2442e4ba698ccc3d71d1f8305eb7 # v5.0.28
+        with:
+          node: false
+          apt-proxy: true
+
+      - name: Check system
+        uses: ./.github/actions/check
+
+      - name: ⚙️  Init
+        run: |
+          echo "OWNER=${OWNER,,}" >> ${GITHUB_ENV}
+
+      - name: test distro
+        uses: ./.github/actions/bake
+        with:
+          args: test-distro
+
+  # test old distros on arm64
+  base-arm64:
+    runs-on: ubuntu-24.04-arm
+    needs:
+      - bats
+      - lint
+      - vitest
+      - build
     timeout-minutes: 30
 
     strategy:
       fail-fast: false
       matrix:
         distro:
-          - focal
           - jammy
-          - noble
+          - resolute
 
     env:
       TAG: ${{ matrix.distro }}
 
     steps:
-      - name: docker-config
-        uses: containerbase/internal-tools@fa96b70003f221771f8c015cd3f598818ebf4d78 # v3.5.4
+      - name: ⚙️ Setup
+        uses: containerbase/internal-tools/setup@e09fecf67a3d2442e4ba698ccc3d71d1f8305eb7 # v5.0.28
         with:
-          command: docker-config
+          node: false
+          apt-proxy: true
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          show-progress: false
+      - name: Check system
+        uses: ./.github/actions/check
 
-      - name: init
+      - name: ⚙️  Init
         run: |
           echo "OWNER=${OWNER,,}" >> ${GITHUB_ENV}
 
-      - name: 📥 Setup Node.js
-        uses: ./.github/actions/setup-node
-
-      - name: prepare apt proxy
-        uses: ./.github/actions/prepare-proxy
-
-      - name: build
-        run: pnpm build
-
       - name: test distro
-        run: docker buildx bake test-distro --set settings.secrets=type=env,id=GITHUB_TOKEN
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # CONTAINERBASE_CDN: ${{ vars.CONTAINERBASE_CDN }}
+        uses: ./.github/actions/bake
+        with:
+          args: test-base
 
   lang:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.arch.os }}
+    name: ${{ matrix.lang }} (${{ matrix.arch.name }})
     needs:
+      - setup
       - base
       - bats
       - lint
       - vitest
-    timeout-minutes: 30
 
     strategy:
+      max-parallel: 10
       fail-fast: false
       matrix:
-        tag:
+        lang:
           - dart
           - dotnet
           - erlang
           - flutter
           - flux
           - golang
+          - haskell
           - java
           - jb
           - helm
@@ -237,46 +286,69 @@ jobs:
           - rust
           - swift
           - latest
+        arch:
+          - name: x86_64
+            os: ubuntu-24.04
+            tag: amd64
+          - name: aarch64
+            os: ubuntu-24.04-arm
+            tag: arm64
+        # include:
+        #   # no ubuntu arm64 support for haskell
+        #   - lang: haskell
+        #     arch:
+        #       name: x86_64
+        #       os: ubuntu-24.04
+        #       tag: amd64
 
     env:
-      TAG: ${{ matrix.tag }}
+      TAG: ${{ matrix.lang }}
 
     steps:
-      - name: docker-config
-        uses: containerbase/internal-tools@fa96b70003f221771f8c015cd3f598818ebf4d78 # v3.5.4
+      - name: ⚙️ Setup
+        uses: containerbase/internal-tools/setup@e09fecf67a3d2442e4ba698ccc3d71d1f8305eb7 # v5.0.28
         with:
-          command: docker-config
+          node: false
+          apt-proxy: true
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          show-progress: false
+      - name: Check system
+        uses: ./.github/actions/check
 
-      - name: init
+      - name: ⚙️ Init
         run: |
           echo "OWNER=${OWNER,,}" >> ${GITHUB_ENV}
-          echo "BASE_IMAGE=${{ needs.base.outputs.base }}" >> ${GITHUB_ENV}
+          echo "BASE_IMAGE=ttl.sh/${{ needs.setup.outputs.uid }}/${{ matrix.arch.tag }}:1d" >> ${GITHUB_ENV}
 
-      - name: 📥 Setup Node.js
-        uses: ./.github/actions/setup-node
+      - name: build base
+        uses: ./.github/actions/bake
+        with:
+          args: >-
+            --set build-ttl.tags=${{env.BASE_IMAGE}}
+            --set build-ttl.cache-to=type=gha,mode=max,scope=${{ needs.setup.outputs.uid }}-${{ matrix.arch.tag }}
+            --set settings.cache-from+=type=gha,scope=${{ needs.setup.outputs.uid }}-${{ matrix.arch.tag }}
+            build-ttl
 
-      - name: prepare apt proxy
-        uses: ./.github/actions/prepare-proxy
-
-      - name: test
-        run: docker buildx bake test --set settings.secrets=type=env,id=GITHUB_TOKEN
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # CONTAINERBASE_CDN: ${{ vars.CONTAINERBASE_CDN }}
+      - name: test distro
+        uses: ./.github/actions/bake
+        with:
+          args: test-${{ matrix.arch.name }}
 
   # Catch-all required check for test matrix
   test-success:
     needs:
+      - base-arm64
       - distro
       - lang
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 1
     if: always()
     steps:
+      - name: Fail for failed or cancelled distro tests
+        if: |
+          needs.base-arm64.result == 'failure' ||
+          needs.base-arm64.result == 'cancelled'
+        run: exit 1
+
       - name: Fail for failed or cancelled distro tests
         if: |
           needs.distro.result == 'failure' ||
@@ -286,5 +358,5 @@ jobs:
       - name: Fail for failed or cancelled lang tests
         if: |
           needs.lang.result == 'failure' ||
-          needs.lang.result == 'skipped'
+          needs.lang.result == 'cancelled'
         run: exit 1

@@ -1,31 +1,11 @@
 #!/bin/bash
 
-export NEEDS_PREPARE=1
-
 function prepare_tool() {
   local version_codename
   local path
 
   version_codename="$(get_distro)"
   case "${version_codename}" in
-    "focal")
-      apt_install \
-        binutils \
-        gnupg2 \
-        libc6-dev \
-        libcurl4 \
-        libedit2 \
-        libgcc-9-dev \
-        libpython2.7 \
-        libsqlite3-0 \
-        libstdc++-9-dev \
-        libxml2 \
-        libz3-dev \
-        pkg-config \
-        tzdata \
-        uuid-dev \
-        zlib1g-dev \
-        ;;
     "jammy")
       apt_install \
         binutils \
@@ -63,8 +43,27 @@ function prepare_tool() {
         unzip \
         zlib1g-dev \
         ;;
+    "resolute")
+      apt_install \
+        binutils \
+        gnupg2 \
+        libc6-dev \
+        libcurl4-openssl-dev \
+        libedit2 \
+        libgcc-11-dev \
+        libncurses6 \
+        libpython3.14 \
+        libsqlite3-0 \
+        libstdc++-11-dev \
+        libxml2-dev \
+        libz3-dev \
+        pkg-config \
+        tzdata \
+        unzip \
+        zlib1g-dev \
+        ;;
     *)
-      echo "Tool '${TOOL_NAME}' not supported on: ${version_codename}! Please use ubuntu 'focal' or 'jammy'." >&2
+      echo "Tool '${TOOL_NAME}' not supported on: ${version_codename}! Please use ubuntu 'noble' or 'resolute'." >&2
       exit 1
     ;;
   esac
@@ -141,6 +140,8 @@ function link_tool () {
   tool_path=$(find_versioned_tool_path)
 
   shell_wrapper "$TOOL_NAME" "$tool_path/bin"
+}
 
-  [[ -n $SKIP_VERSION ]] || swift --version
+function test_tool () {
+  swift --version
 }

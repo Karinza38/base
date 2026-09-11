@@ -1,31 +1,15 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
 import { isNonEmptyStringAndNotWhitespace } from '@sindresorhus/is';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { z } from 'zod';
-import { BaseInstallService } from '../../install-tool/base-install.service';
-import { ToolVersionResolver } from '../../install-tool/tool-version-resolver';
-import {
-  CompressionService,
-  EnvService,
-  HttpService,
-  PathService,
-} from '../../services';
-import { semverSort } from '../../utils';
+import { injectFromHierarchy, injectable } from 'inversify';
+import { BaseInstallService } from '../../install-tool/base-install.service.ts';
+import { ToolVersionResolver } from '../../install-tool/tool-version-resolver.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class ComposerInstallService extends BaseInstallService {
   readonly name = 'composer';
-
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-    @inject(CompressionService) private compress: CompressionService,
-  ) {
-    super(pathSvc, envSvc);
-  }
+  override readonly parent = 'php';
 
   override async install(version: string): Promise<void> {
     const name = this.name;
@@ -50,32 +34,21 @@ export class ComposerInstallService extends BaseInstallService {
   }
 
   override async test(_version: string): Promise<void> {
-    await execa('composer', ['--version'], {
-      stdio: ['inherit', 'inherit', 1],
-    });
+    await this._spawn('composer', ['--version']);
   }
 }
 
 @injectable()
+@injectFromHierarchy()
 export class ComposerVersionResolver extends ToolVersionResolver {
   readonly tool = 'composer';
 
   async resolve(version: string | undefined): Promise<string | undefined> {
     if (!isNonEmptyStringAndNotWhitespace(version) || version === 'latest') {
-      const meta = ComposerVersionsSchema.parse(
-        await this.http.getJson('https://getcomposer.org/versions'),
+      return await this.http.get(
+        `https://github.com/containerbase/${this.tool}-prebuild/releases/latest/download/version`,
       );
-      // we know that the latest version is the first entry, so search for first lts
-      return meta;
     }
     return version;
   }
 }
-
-const ComposerVersionsSchema = z
-  .object({
-    stable: z.array(z.object({ version: z.string() })),
-  })
-  .transform(({ stable }) => {
-    return semverSort(stable.map((v) => v.version)).pop();
-  });

@@ -1,0 +1,58 @@
+name: auto-pr
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - closed
+      - labeled
+
+jobs:
+  debug:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: event info
+        run: |
+          cat <<'EOF'
+          ${{ toJSON(github) }}
+          EOF
+
+  review:
+    if: github.event.action == 'opened' && !endsWith(github.event.pull_request.user.login, '[bot]')
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: hkusu/review-assign-action@5bee595fdb9765d4a0bd35724b6302fa15569158 # v1.4.0
+        with:
+          reviewers: ${{ vars.REVIEWERS }}
+          max-num-of-reviewers: 2
+
+  backport:
+    if: >
+      github.event.pull_request.merged
+      && (
+        (
+          github.event.action == 'closed'
+          && contains(github.event.pull_request.labels.*.name, 'backport:')
+        )
+        || (
+          github.event.action == 'labeled'
+          && startsWith(github.event.label.name, 'backport:')
+        )
+      )
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: kiegroup/git-backporting@17bab14ff4b362d044e12c18e491b4ef8e69a4b1 # v4.10.0
+        with:
+          target-branch-pattern: '^backport:(?<target>(.*))$'
+          strategy: ort
+          strategy-option: find-renames
+          cherry-pick-options: -x
+          auth: ${{ secrets.GITHUB_TOKEN }}
+          pull-request: ${{ github.event.pull_request.url }}
+          auto-no-squash: true
+          enable-err-notification: true

@@ -21,7 +21,7 @@ RUN install-containerbase
 
 # TODO: move to prepare
 # renovate: datasource=github-tags packageName=git/git
-RUN install-tool git v2.47.1
+RUN install-tool git v2.55.0
 
 #--------------------------------------
 # Image: base
@@ -44,7 +44,7 @@ WORKDIR /test
 FROM base AS testa
 
 # renovate: datasource=github-releases packageName=containerbase/golang-prebuild
-RUN install-tool golang 1.23.3
+RUN install-tool golang 1.26.8
 
 USER 12021
 
@@ -108,7 +108,7 @@ RUN [[ -d /tmp/containerbase ]] || (echo "/tmp/containerbase should exist"; exit
 RUN rm -rf /tmp/*;
 
 # renovate: datasource=github-releases packageName=containerbase/golang-prebuild
-RUN install-tool golang 1.23.3
+RUN install-tool golang 1.26.8
 
 
 RUN set -ex; cd a; go get -d ./...; cat go.sum; go mod tidy; cat go.sum
@@ -130,6 +130,14 @@ RUN set -ex; \
 
 RUN set -ex; \
   [ "$(command -v mod)" = "/usr/local/bin/mod" ] && echo "works" || exit 1;
+
+
+RUN set -ex; \
+  ls -la /usr/local/bin/;\
+  uninstall-tool golang -a -r; \
+  ls -la /usr/local/bin/;\
+  if [ "$(ls -A /usr/local/bin/)" -eq "mod" ]; then echo "tools not uninstalled" >&2; exit 1; fi;\
+  true;
 
 #--------------------------------------
 # final

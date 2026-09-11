@@ -90,7 +90,7 @@ function download_file () {
   local temp_folder=${CONTAINERBASE_CACHE_DIR:-${TEMP_DIR}}
   while [ "${retry}" -gt 0 ]; do
     retry=$((retry-1))
-    if ! log=$(containerbase-cli df "${url}" "${temp_folder}/${name}"); then
+    if ! log=$(containerbase-cli fd "${url}" "${temp_folder}/${name}"); then
       echo "Download failed: ${url}" >&2
       if [ "${retry}" -le 0 ]; then
         echo "Download failed: ${url}" >&2
@@ -298,5 +298,19 @@ function restore_folder_from_cache () {
 # Do a HEAD request to check if a file exists at url.
 # It returns the http status code.
 function file_exists () {
-  curl -sSLIo /dev/null -w "%{http_code}" "${1}"
+  local code
+  local log
+  local url=$1
+  log=$(containerbase-cli fe "${url}")
+  code=$?
+  if [ "${code}" -eq 0 ]; then
+    echo 200
+  elif [ "${code}" -gt 0 ]; then
+    # echo 0 if log level doesn't print error messages
+    echo "${log}" | grep -oP '(?<=status code: )\d+' || echo 0
+  else
+    echo "Check failed: ${url}" >&2
+    echo "${log}" >&2
+    return $code
+  fi
 }

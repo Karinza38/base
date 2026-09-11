@@ -41,7 +41,7 @@ WORKDIR /test
 FROM base AS build
 
 # renovate: datasource=github-releases packageName=containerbase/node-prebuild versioning=node
-RUN install-tool node 22.11.0
+RUN install-tool node 24.19.0
 
 # ensure npmrc is writable by user
 RUN set -ex; [ $(stat --format '%u' "/tmp/containerbase/cache/.npmrc") -eq ${USER_ID} ]
@@ -93,7 +93,7 @@ RUN install-tool yarn 2.4.2
 RUN install-tool yarn 3.8.1
 
 # renovate: datasource=npm packageName=@yarnpkg/cli-dist
-RUN install-tool yarn 4.5.3
+RUN install-tool yarn 4.18.0
 
 #--------------------------------------
 # test: pnpm
@@ -102,7 +102,7 @@ RUN install-tool yarn 4.5.3
 FROM build AS testc
 
 # renovate: datasource=npm
-RUN install-tool pnpm 9.14.4
+RUN install-tool pnpm 10.34.5
 
 RUN set -ex; \
   pnpm --version;
@@ -115,14 +115,14 @@ RUN set -ex; cd a; pnpm i
 # test: node 20
 #--------------------------------------
 
-FROM base AS testd
+FROM base AS test-v20
 
 RUN prepare-tool node
 
 USER 12021
 
 # renovate: datasource=github-releases packageName=containerbase/node-prebuild versioning=node
-RUN install-tool node 20.18.1
+RUN install-tool node 20.20.2
 
 RUN npm install -g yarn
 RUN set -ex; \
@@ -145,7 +145,44 @@ RUN set -ex; \
 RUN set -ex; cd test/a; npm i
 
 # renovate: datasource=npm
-RUN install-npm del-cli 6.0.0
+RUN install-npm del-cli 7.0.0
+RUN del -d test/a/**
+
+#--------------------------------------
+# test: node 22
+#--------------------------------------
+
+FROM base AS test-v22
+
+RUN prepare-tool node
+
+USER 12021
+
+# renovate: datasource=github-releases packageName=containerbase/node-prebuild versioning=node
+RUN install-tool node 22.23.2
+
+RUN npm install -g yarn
+RUN set -ex; \
+  [ "$(command -v yarn)" = "" ] && echo "works" || exit 1; \
+  true;
+
+# renovate: datasource=npm
+RUN install-tool yarn 1.22.22
+RUN set -ex; \
+  [ "$(command -v yarn)" = "/usr/local/bin/yarn" ] && echo "works" || exit 1; \
+  yarn --version;
+
+
+COPY --chown=12021:0 test/node/test test
+
+RUN set -ex; \
+  npm --version; \
+  command -v npm;
+
+RUN set -ex; cd test/a; npm i
+
+# renovate: datasource=npm
+RUN install-npm del-cli 7.0.0
 RUN del -d test/a/**
 
 #--------------------------------------
@@ -230,15 +267,25 @@ RUN set -ex; yarn --version
 RUN set -ex; cd a; yarn install; [[ ! -d node_modules/.bin ]] || exit 1
 
 #--------------------------------------
-# test: npm (install-tool npm, node v14)
+# test: npm (install-tool npm v6, node v14, including node-gyp update)
 #--------------------------------------
 FROM base AS testi
 
 ARG CONTAINERBASE_DEBUG
 
+# exercises https://github.com/containerbase/base/issues/5404
+ARG npm_config_build_from_source=true
+
 # don't update!!
 RUN install-tool node v14.18.1
-RUN install-tool node v14.18.2
+ARG NODE_VERSION=14.18.2
+RUN install-tool node "v${NODE_VERSION}"
+
+# verify global node-gyp was updated
+ARG EXPECTED_NODE_GYP_ABOVE=11.0.0
+RUN set -ex; \
+  node_gyp_version=$(npm explore npm -g -- npm ls node-gyp --json | jq -er '.dependencies["npm-lifecycle"].dependencies["node-gyp"].version'); \
+  printf '%s\n' "${EXPECTED_NODE_GYP_ABOVE}" "${node_gyp_version}" | sort -V | head -n1 | grep -q "^${EXPECTED_NODE_GYP_ABOVE}$"
 
 RUN set -ex; ls -la $USER_HOME/; test -L $USER_HOME/.npmrc
 
@@ -250,11 +297,20 @@ COPY --chown=12021:0 test/node/test test
 WORKDIR /test
 
 # don't update!!
-RUN install-tool npm 6.14.15
+ARG NPM_VERSION=6.14.15
+RUN install-tool npm "${NPM_VERSION}"
 
 RUN node --version
 RUN npm --version
-RUN npm --version | grep '6.14.15'
+RUN npm --version | grep "${NPM_VERSION}"
+
+# verify local node-gyp was updated
+RUN set -ex; \
+  prefix="/opt/containerbase/tools/npm/${NPM_VERSION}/${NODE_VERSION}"; \
+  node_gyp_version=$(npm explore npm --prefix "${prefix}" -- npm ls node-gyp --json | jq -er '.dependencies["npm-lifecycle"].dependencies["node-gyp"].version'); \
+  printf '%s\n' "${EXPECTED_NODE_GYP_ABOVE}" "${node_gyp_version}" | sort -V | head -n1 | grep -q "^${EXPECTED_NODE_GYP_ABOVE}$"
+
+
 # ignore scripts to speedup test (re2 is no longer compatible with node 14)
 RUN set -ex; cd a; npm install --ignore-scripts
 
@@ -307,18 +363,11 @@ RUN npm --version | grep '7.24.2'
 # don't update!!
 ENV NPM_VERSION=6.14.16
 
-RUN install-tool npm ${NPM_VERSION}
+RUN install-tool npm "${NPM_VERSION}"
 
 RUN node --version
 RUN npm --version
 RUN npm --version | grep "${NPM_VERSION}"
-
-# TODO: use bats test
-RUN set -ex; \
-  export NODE_VERSION=$(cat /opt/containerbase/versions/node); \
-  [ -r /opt/containerbase/tools/npm/${NPM_VERSION}/${NODE_VERSION}/node_modules/npm/node_modules/node-gyp/package.json ] || { echo "missing file"; exit 1; }; \
-  [ "$(cat /opt/containerbase/tools/npm/${NPM_VERSION}/${NODE_VERSION}/node_modules/npm/node_modules/node-gyp/package.json | jq -r .version)" != "5.1.0" ] \
-  && echo node-gyp works || { echo "node-gyp failure"; exit 1; };
 
 #--------------------------------------
 # test: corepack
@@ -340,7 +389,7 @@ RUN corepack --version | tee | grep '0.9.0'
 USER 12021
 
 # renovate: datasource=npm
-RUN install-tool corepack 0.30.0
+RUN install-tool corepack 0.35.0
 
 RUN corepack --version
 RUN corepack --version | grep '0.9.0' && exit 1 || echo 'success'
@@ -359,7 +408,7 @@ FROM build AS testm
 SHELL [ "/bin/sh", "-c" ]
 
 # renovate: datasource=npm
-RUN install-tool corepack 0.30.0
+RUN install-tool corepack 0.35.0
 
 # renovate: datasource=npm depName=yarn
 ARG YARN_VERSION=1.22.22
@@ -377,14 +426,14 @@ FROM build AS testn
 SHELL [ "/bin/sh", "-c" ]
 
 # renovate: datasource=npm
-RUN install-tool corepack 0.30.0
+RUN install-tool corepack 0.35.0
 
 # test if corepack is overriding yarn
 # renovate: datasource=npm
 RUN install-tool yarn 1.22.22
 
 # renovate: datasource=npm
-RUN install-tool corepack 0.30.0
+RUN install-tool corepack 0.35.0
 
 
 # renovate: datasource=npm depName=yarn
@@ -405,17 +454,17 @@ FROM build AS testo
 SHELL [ "/bin/sh", "-c" ]
 
 # renovate: datasource=npm
-RUN install-tool corepack 0.30.0
+RUN install-tool corepack 0.35.0
 
 # test if corepack is overriding pnpm
 # renovate: datasource=npm
-RUN install-tool pnpm 9.14.4
+RUN install-tool pnpm 10.34.5
 
 # renovate: datasource=npm
-RUN install-tool corepack 0.30.0
+RUN install-tool corepack 0.35.0
 
 # renovate: datasource=npm depName=pnpm
-ARG PNPM_VERSION=9.14.4
+ARG PNPM_VERSION=10.34.5
 
 RUN set -ex; cd a; \
   npm pkg set packageManager=pnpm@${PNPM_VERSION}; \
@@ -439,7 +488,7 @@ RUN install-tool yarn
 RUN install-tool yarn-slim
 
 # renovate: datasource=npm
-RUN install-tool corepack 0.30.0
+RUN install-tool corepack 0.35.0
 
 RUN install-tool pnpm
 RUN install-tool yarn
@@ -459,7 +508,7 @@ RUN set -ex; \
   yarn -v | grep ${YARN_SLIM_VERSION};
 
 #--------------------------------------
-# test: renovate (rootless,readonly)
+# test: renovate (rootless,readonly,uninstall)
 #--------------------------------------
 FROM base AS testq
 
@@ -471,7 +520,7 @@ RUN set -ex; \
 
 RUN prepare-tool node
 
-# emulate emtpy containerbase folders
+# emulate empty containerbase folders
 RUN set -ex; \
   ls -la /tmp/containerbase/cache; \
   rm -rf /opt/containerbase/*; \
@@ -495,7 +544,7 @@ RUN install-tool yarn
 RUN install-npm del-cli
 
 # renovate: datasource=npm depName=renovate
-ARG RENOVATE_VERSION=39.42.4
+ARG RENOVATE_VERSION=44.17.1
 RUN install-tool renovate
 
 RUN set -ex; \
@@ -512,6 +561,13 @@ RUN set -ex; \
   rush -h; \
   true
 
+RUN set -ex; \
+  ls -la /usr/local/bin/;\
+  uninstall-tool node -a -r; \
+  ls -la /usr/local/bin/;\
+  if [ -n "$(ls -A /usr/local/bin/)" ]; then echo "tools not uninstalled" >&2; exit 1; fi;\
+  true
+
 #--------------------------------------
 # final
 #--------------------------------------
@@ -520,7 +576,6 @@ FROM base
 COPY --from=testa /.dummy /.dummy
 COPY --from=testb /.dummy /.dummy
 COPY --from=testc /.dummy /.dummy
-COPY --from=testd /.dummy /.dummy
 COPY --from=teste /.dummy /.dummy
 COPY --from=testf /.dummy /.dummy
 COPY --from=testg /.dummy /.dummy
@@ -534,3 +589,6 @@ COPY --from=testn /.dummy /.dummy
 COPY --from=testo /.dummy /.dummy
 COPY --from=testp /.dummy /.dummy
 COPY --from=testq /.dummy /.dummy
+
+COPY --from=test-v20 /.dummy /.dummy
+COPY --from=test-v22 /.dummy /.dummy

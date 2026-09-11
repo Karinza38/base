@@ -9,8 +9,8 @@ import {
   reset,
   tool2path,
   validateSystem,
-} from '.';
-import { rootPath } from '~test/path';
+} from './index.ts';
+import { rootPath } from '~test/path.ts';
 
 const osMocks = vi.hoisted(() => ({
   platform: vi.fn(),
@@ -104,6 +104,8 @@ UBUNTU_CODENAME=jammy`);
     expect(parseBinaryName('containerbase-cli', 'node', 'app')).toBe(
       'containerbase-cli',
     );
+    procMocks.argv0 = 'tsx';
+    expect(parseBinaryName(null, 'tsx', 'index.ts')).toBe('tsx');
   });
 
   test('cleanAptFiles', async () => {

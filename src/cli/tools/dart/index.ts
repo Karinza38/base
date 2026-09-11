@@ -1,22 +1,15 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../../install-tool/base-install.service';
-import { BasePrepareService } from '../../prepare-tool/base-prepare.service';
-import {
-  CompressionService,
-  EnvService,
-  HttpService,
-  PathService,
-} from '../../services';
-import { parse } from '../../utils';
+import { injectFromHierarchy, injectable } from 'inversify';
+import { BaseInstallService } from '../../install-tool/base-install.service.ts';
+import { BasePrepareService } from '../../prepare-tool/base-prepare.service.ts';
+import { parse } from '../../utils/index.ts';
 import {
   initDartHome,
   initPubCache,
   prepareDartHome,
   preparePubCache,
-} from './utils';
+} from './utils.ts';
 
 // Dart SDK sample urls
 // https://storage.googleapis.com/dart-archive/channels/stable/release/1.11.0/sdk/dartsdk-linux-x64-release.zip
@@ -26,6 +19,7 @@ import {
 // https://storage.googleapis.com/dart-archive/channels/stable/release/2.19.4/sdk/dartsdk-linux-arm64-release.zip.sha256sum
 
 @injectable()
+@injectFromHierarchy()
 export class DartPrepareService extends BasePrepareService {
   readonly name = 'dart';
 
@@ -42,6 +36,7 @@ export class DartPrepareService extends BasePrepareService {
 }
 
 @injectable()
+@injectFromHierarchy()
 export class DartInstallService extends BaseInstallService {
   readonly name = 'dart';
 
@@ -52,15 +47,6 @@ export class DartInstallService extends BaseInstallService {
       case 'amd64':
         return 'x64';
     }
-  }
-
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-    @inject(CompressionService) private compress: CompressionService,
-  ) {
-    super(pathSvc, envSvc);
   }
 
   override async install(version: string): Promise<void> {
@@ -97,6 +83,6 @@ export class DartInstallService extends BaseInstallService {
   }
 
   override async test(_version: string): Promise<void> {
-    await execa('dart', ['--version'], { stdio: ['inherit', 'inherit', 1] });
+    await this._spawn('dart', ['--version']);
   }
 }

@@ -1,6 +1,7 @@
 import { env } from 'node:process';
 import { isNonEmptyStringAndNotWhitespace } from '@sindresorhus/is';
-import { type TransportTargetOptions, levels, pino, transport } from 'pino';
+// eslint-disable-next-line import-x/no-named-as-default
+import pino, { type TransportTargetOptions, levels, transport } from 'pino';
 
 const level =
   [
@@ -11,10 +12,18 @@ const level =
     .filter(isNonEmptyStringAndNotWhitespace)
     .shift() ?? 'info';
 
+const format =
+  [env.CONTAINERBASE_LOG_FORMAT, env.LOG_FORMAT]
+    .filter(isNonEmptyStringAndNotWhitespace)
+    .shift()
+    ?.toLowerCase() ?? 'pretty';
+
+const stdoutTransportTarget = format === 'json' ? 'pino/file' : 'pino-pretty';
+
 let fileLevel = 'silent';
 
 const targets: TransportTargetOptions[] = [
-  { target: 'pino-pretty', level, options: {} },
+  { target: stdoutTransportTarget, level, options: {} },
 ];
 
 if (isNonEmptyStringAndNotWhitespace(env.CONTAINERBASE_LOG_FILE)) {

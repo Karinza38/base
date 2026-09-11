@@ -28,7 +28,36 @@ RUN install-tool dart 2.18.0
 
 ## GitHub (github.com)
 
-GitHub releases are redirecting from `https://github.com/<org>/<repo>/releases/<version>/<file>` to `https://objects.githubusercontent.com/<some-url>` which seems to be an Amazon S3 bucket.
+GitHub releases are redirecting from `https://github.com/<org>/<repo>/releases/download/<version>/<file>` to `https://objects.githubusercontent.com/<some-url>` which seems to be an Amazon S3 bucket.
+
+## `apko`
+
+apko releases are downloaded from:
+
+- `<https://github.com/chainguard-dev/apko/releases>`
+
+Samples:
+
+```txt
+https://github.com/chainguard-dev/apko/releases/download/v0.30.11/apko_0.30.11_linux_amd64.tar.gz
+https://github.com/chainguard-dev/apko/releases/download/v0.30.11/apko_0.30.11_linux_arm64.tar.gz
+https://github.com/chainguard-dev/apko/releases/download/v0.30.11/checksums.txt
+```
+
+## `apm`
+
+APM (Agent Package Manager) releases are downloaded from:
+
+- `https://github.com/microsoft/apm/releases`
+
+Samples:
+
+```txt
+https://github.com/microsoft/apm/releases/download/v0.24.0/apm-linux-x86_64.tar.gz
+https://github.com/microsoft/apm/releases/download/v0.24.0/apm-linux-x86_64.tar.gz.sha256
+https://github.com/microsoft/apm/releases/download/v0.24.0/apm-linux-arm64.tar.gz
+https://github.com/microsoft/apm/releases/download/v0.24.0/apm-linux-arm64.tar.gz.sha256
+```
 
 ## `bazelisk`
 
@@ -39,8 +68,22 @@ Bazelisk releases are downloaded from:
 Samples:
 
 ```txt
-https://github.com/bazelbuild/bazelisk/releases/v1.19.0/bazelisk-linux-amd64
-https://github.com/bazelbuild/bazelisk/releases/v1.19.0/bazelisk-linux-arm64
+https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-amd64
+https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-arm64
+```
+
+## `buf`
+
+Buf releases are downloaded from:
+
+- `https://github.com/bufbuild/buf/releases`
+
+Samples:
+
+```txt
+https://github.com/bufbuild/buf/releases/download/v1.67.0/buf-Linux-x84_64.tar.gz
+https://github.com/bufbuild/buf/releases/download/v1.67.0/buf-Linux-aarch64.tar.gz
+https://github.com/bufbuild/buf/releases/download/v1.67.0/sha256.txt
 ```
 
 ## `bun`
@@ -52,9 +95,10 @@ Bun releases are downloaded from:
 Samples:
 
 ```txt
-https://github.com/oven-sh/bun/releases/bun-v1.0.0/bun-linux-x64.zip
-https://github.com/oven-sh/bun/releases/bun-v1.0.0/bun-linux-aarch64.zip
-https://github.com/oven-sh/bun/releases/bun-v1.0.0/SHASUMS256.txt
+https://github.com/oven-sh/bun/releases/download/bun-v1.0.0/bun-linux-x64.zip
+https://github.com/oven-sh/bun/releases/download/bun-v1.0.0/bun-linux-x64-baseline.zip
+https://github.com/oven-sh/bun/releases/download/bun-v1.0.0/bun-linux-aarch64.zip
+https://github.com/oven-sh/bun/releases/download/bun-v1.0.0/SHASUMS256.txt
 ```
 
 ## `dart`
@@ -71,6 +115,35 @@ https://storage.googleapis.com/dart-archive/channels/stable/release/2.18.0/sdk/d
 https://storage.googleapis.com/dart-archive/channels/stable/release/2.19.4/sdk/dartsdk-linux-x64-release.zip.sha256sum
 https://storage.googleapis.com/dart-archive/channels/stable/release/2.19.4/sdk/dartsdk-linux-arm64-release.zip
 https://storage.googleapis.com/dart-archive/channels/stable/release/2.19.4/sdk/dartsdk-linux-arm64-release.zip.sha256sum
+```
+
+## `deno`
+
+Deno releases are downloaded from:
+
+- `https://github.com/denoland/deno/releases`
+
+Samples:
+
+```txt
+https://github.com/denoland/deno/releases/download/v2.4.5/deno-aarch64-unknown-linux-gnu.zip
+https://github.com/denoland/deno/releases/download/v2.4.5/deno-aarch64-unknown-linux-gnu.zip.sha256sum
+https://github.com/denoland/deno/releases/download/v2.4.5/deno-x86_64-unknown-linux-gnu.zip
+https://github.com/denoland/deno/releases/download/v2.4.5/deno-x86_64-unknown-linux-gnu.zip.sha256sum
+```
+
+## `devbox`
+
+Devbox releases are downloaded from:
+
+- `https://github.com/jetify-com/devbox/releases`
+
+Samples:
+
+```txt
+https://github.com/jetify-com/devbox/releases/download/0.12.0/devbox_0.12.0_linux_amd64.tar.gz
+https://github.com/jetify-com/devbox/releases/download/0.12.0/devbox_0.12.0_linux_arm64.tar.gz
+https://github.com/jetify-com/devbox/releases/download/0.12.0/checksums.txt
 ```
 
 ## `docker`
@@ -90,13 +163,64 @@ https://download.docker.com/linux/static/stable/aarch64/docker-24.0.5.tgz
 
 Dotnet releases are downloaded from:
 
-- `https://dotnetcli.azureedge.net/dotnet/Sdk`
+- `https://builds.dotnet.microsoft.com/dotnet/Sdk`
 
 Samples:
 
 ```txt
-https://dotnetcli.azureedge.net/dotnet/Sdk/6.0.413/dotnet-sdk-6.0.413-linux-x64.tar.gz
-https://dotnetcli.azureedge.net/dotnet/Sdk/6.0.413/dotnet-sdk-6.0.413-linux-arm64.tar.gz
+https://builds.dotnet.microsoft.com/dotnet/Sdk/6.0.413/dotnet-sdk-6.0.413-linux-x64.tar.gz
+https://builds.dotnet.microsoft.com/dotnet/Sdk/6.0.413/dotnet-sdk-6.0.413-linux-arm64.tar.gz
+```
+
+### `mono`
+
+Mono releases are downloaded from:
+
+- `https://github.com/containerbase/mono-prebuild/releases`
+
+Samples:
+
+```txt
+https://github.com/containerbase/mono-prebuild/releases/download/6.14.1/mono-6.14.1-jammy-x86_x64.tar.xz.sha512
+https://github.com/containerbase/mono-prebuild/releases/download/6.14.1/mono-6.14.1-jammy-x86_x64.tar.xz
+https://github.com/containerbase/mono-prebuild/releases/download/6.14.1/mono-6.14.1-jammy-aarch64.tar.xz.sha512
+https://github.com/containerbase/mono-prebuild/releases/download/6.14.1/mono-6.14.1-jammy-aarch64.tar.xz
+https://github.com/containerbase/mono-prebuild/releases/latest/download/version
+```
+
+#### `nuget`
+
+Nuget releases are downloaded from:
+
+- `https://dist.nuget.org`
+
+The last url is used to find the latest version if no version was provided.
+
+Samples:
+
+```txt
+https://dist.nuget.org/win-x86-commandline/v6.14.1/nuget.exe
+https://dist.nuget.org/tools.json
+```
+
+### `paket`
+
+Paket releases are downloaded with `dotnet tool install paket` from:
+
+- `https://api.nuget.org/`
+
+### `powershell`
+
+Powershell releases are downloaded from:
+
+- `https://github.com/PowerShell/PowerShell/releases`
+
+Samples:
+
+```txt
+https://github.com/PowerShell/PowerShell/releases/download/v7.4.1/powershell-7.4.1-linux-arm64.tar.gz
+https://github.com/PowerShell/PowerShell/releases/download/v7.4.1/powershell-7.4.1-linux-x64.tar.gz
+https://github.com/PowerShell/PowerShell/releases/download/v7.4.1/hashes.sha256
 ```
 
 ## `erlang`
@@ -108,8 +232,8 @@ Erlang releases are downloaded from:
 Samples:
 
 ```txt
-https://github.com/containerbase/erlang-prebuild/releases/25.3.2.8/erlang-25.3.2.8-jammy-x86_x64.tar.xz.sha512
-https://github.com/containerbase/erlang-prebuild/releases/25.3.2.8/erlang-25.3.2.8-jammy-x86_x64.tar.xz
+https://github.com/containerbase/erlang-prebuild/releases/download/25.3.2.8/erlang-25.3.2.8-jammy-x86_x64.tar.xz.sha512
+https://github.com/containerbase/erlang-prebuild/releases/download/25.3.2.8/erlang-25.3.2.8-jammy-x86_x64.tar.xz
 ```
 
 ### `elixir`
@@ -121,9 +245,9 @@ Elixir releases are downloaded from:
 Samples:
 
 ```txt
-https://github.com/elixir-lang/elixir/releases/v1.16.0/elixir-otp-24.zip
-https://github.com/elixir-lang/elixir/releases/v1.14.0/elixir-otp-23.zip
-https://github.com/elixir-lang/elixir/releases/v1.13.0/Precompiled.zip
+https://github.com/elixir-lang/elixir/releases/download/v1.16.0/elixir-otp-24.zip
+https://github.com/elixir-lang/elixir/releases/download/v1.14.0/elixir-otp-23.zip
+https://github.com/elixir-lang/elixir/releases/download/v1.13.0/Precompiled.zip
 ```
 
 ## `flutter`
@@ -135,10 +259,10 @@ Flutter releases are downloaded from:
 Samples:
 
 ```txt
-https://github.com/containerbase/flutter-prebuild/releases/3.13.7/flutter-3.13.7-x86_64.tar.xz
-https://github.com/containerbase/flutter-prebuild/releases/3.13.7/flutter-3.13.7-x86_64.tar.xz.sha512
-https://github.com/containerbase/flutter-prebuild/releases/3.13.7/flutter-3.13.7-aarch64.tar.xz
-https://github.com/containerbase/flutter-prebuild/releases/3.13.7/flutter-3.13.7-aarch64.tar.xz.sha512
+https://github.com/containerbase/flutter-prebuild/releases/download/3.13.7/flutter-3.13.7-x86_64.tar.xz
+https://github.com/containerbase/flutter-prebuild/releases/download/3.13.7/flutter-3.13.7-x86_64.tar.xz.sha512
+https://github.com/containerbase/flutter-prebuild/releases/download/3.13.7/flutter-3.13.7-aarch64.tar.xz
+https://github.com/containerbase/flutter-prebuild/releases/download/3.13.7/flutter-3.13.7-aarch64.tar.xz.sha512
 ```
 
 ## `flux`
@@ -150,8 +274,22 @@ Flux releases are downloaded from:
 Samples:
 
 ```txt
-https://github.com/fluxcd/flux2/releases/v0.19.0/flux_0.19.0_linux_amd64.tar.gz
-https://github.com/fluxcd/flux2/releases/v2.1.0/flux_2.1.0_linux_arm64.tar.gz
+https://github.com/fluxcd/flux2/releases/download/v0.19.0/flux_0.19.0_linux_amd64.tar.gz
+https://github.com/fluxcd/flux2/releases/download/v2.1.0/flux_2.1.0_linux_arm64.tar.gz
+```
+
+## `gh`
+
+GitHub CLI releases are downloaded from:
+
+- `https://github.com/cli/cli/releases`
+
+Samples:
+
+```txt
+https://github.com/cli/cli/releases/download/v2.97.0/gh_2.97.0_linux_amd64.tar.gz
+https://github.com/cli/cli/releases/download/v2.97.0/gh_2.97.0_linux_arm64.tar.gz
+https://github.com/cli/cli/releases/download/v2.97.0/gh_2.97.0_checksums.txt
 ```
 
 ## `git`
@@ -171,14 +309,14 @@ Git LFS releases are downloaded from:
 Samples:
 
 ```txt
-https://github.com/git-lfs/git-lfs/releases/v3.4.1/git-lfs-linux-amd64-v3.4.1.tar.gz
+https://github.com/git-lfs/git-lfs/releases/download/v3.4.1/git-lfs-linux-amd64-v3.4.1.tar.gz
 ```
 
 ## gleam
 
 Gleam releases are downloaded from:
 
-- `https://github.com/gleam-lang/gleam/releases/download`
+- `https://github.com/gleam-lang/gleam/releases`
 
 Samples:
 
@@ -210,6 +348,38 @@ https://github.com/containerbase/golang-prebuild/releases/download/1.22.5/golang
 https://go.dev/dl/?mode=json&include=all
 https://dl.google.com/go/go1.21.6.linux-arm64.tar.gz
 https://dl.google.com/go/go1.17.5.linux-amd64.tar.gz
+```
+
+## `haskell`
+
+Haskell tools are separated.
+
+### `cabal`
+
+Cabal releases are downloaded from:
+
+- `https://downloads.haskell.org/~cabal/`
+
+Samples:
+
+```txt
+https://downloads.haskell.org/~cabal/cabal-install-3.16.1.0/cabal-install-3.16.1.0-aarch64-linux-deb10.tar.xz
+https://downloads.haskell.org/~cabal/cabal-install-3.16.1.0/cabal-install-3.16.1.0-x86_64-linux-deb10.tar.xz
+https://downloads.haskell.org/~cabal/cabal-install-3.16.1.0/SHA256SUMS
+```
+
+### `ghc`
+
+GHC releases are downloaded from:
+
+- `https://downloads.haskell.org/~ghc/`
+
+Samples:
+
+```txt
+https://downloads.haskell.org/~ghc/ghc-9.2.1/ghc-9.2.1-aarch64-deb10-linux.tar.xz
+https://downloads.haskell.org/~ghc/ghc-9.2.1/ghc-9.2.1-x86_64-deb10-linux.tar.xz
+https://downloads.haskell.org/~ghc/ghc-9.2.1/SHA256SUMS
 ```
 
 ## `helm`
@@ -250,8 +420,23 @@ Samples:
 ```txt
 https://api.adoptium.net/v3/assets/version/21.0.1+12.0.LTS?architecture=x86_64&image_type=jre&heap_size=normal&os=linux&page=0&page_size=1&project=jdk&semver=true
 https://api.adoptium.net/v3/assets/version/11.0.22+7?architecture=x86_64&image_type=jdk&heap_size=normal&os=linux&page=0&page_size=1&project=jdk&semver=true
-https://github.com/adoptium/temurin21-binaries/releases/jdk-21.0.1%2B12/OpenJDK21U-jre_x64_linux_hotspot_21.0.1_12.tar.gz
-https://github.com/adoptium/temurin11-binaries/releases/jdk-11.0.22%2B7/OpenJDK11U-jdk_x64_linux_hotspot_11.0.22_7.tar.gz
+https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1%2B12/OpenJDK21U-jre_x64_linux_hotspot_21.0.1_12.tar.gz
+https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.22%2B7/OpenJDK11U-jdk_x64_linux_hotspot_11.0.22_7.tar.gz
+```
+
+### `android-sdk`
+
+`android-sdk-cmdline-tools` releases are downloaded from:
+
+- `https://dl.google.com/android/repository/`
+
+The `repository2-3.xml` file is used to determine the checksum and find latest release of the `cmdline-tools`.
+
+Samples:
+
+```txt
+https://dl.google.com/android/repository/commandlinetools-linux-14742923_latest.zip
+https://dl.google.com/android/repository/repository2-3.xml
 ```
 
 ### `gradle`
@@ -277,7 +462,7 @@ https://services.gradle.org/distributions/gradle-6.9.4-bin.zip
 Maven releases are downloaded from:
 
 - `https://github.com/containerbase/maven-prebuild/releases`
-- `https://archive.apache.org/dist/maven`
+- `https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven`
 
 The first url is preferred and the second is used as fallback for older versions.
 
@@ -287,10 +472,10 @@ Samples:
 https://github.com/containerbase/maven-prebuild/releases/download/3.0.4/maven-3.0.4.tar.xz.sha512
 https://github.com/containerbase/maven-prebuild/releases/download/3.0.4/maven-3.0.4.tar.xz
 https://github.com/containerbase/maven-prebuild/releases/latest/download/version
-https://archive.apache.org/dist/maven/maven-3/3.0.4/binaries/apache-maven-3.0.4-bin.tar.gz
-https://archive.apache.org/dist/maven/maven-3/3.0.4/binaries/apache-maven-3.0.4-bin.tar.gz.sha1
-https://archive.apache.org/dist/maven/maven-3/3.6.2/binaries/apache-maven-3.6.2-bin.tar
-https://archive.apache.org/dist/maven/maven-3/3.6.2/binaries/apache-maven-3.6.2-bin.tar.gz.sha512
+https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.0.4/apache-maven-3.0.4-bin.tar.gz
+https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.0.4/apache-maven-3.0.4-bin.tar.gz.sha1
+https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.6.2/apache-maven-3.6.2-bin.tar
+https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.6.2/apache-maven-3.6.2-bin.tar.gz.sha512
 ```
 
 ### `sbt`
@@ -310,9 +495,8 @@ https://github.com/sbt/sbt/releases/download/v1.5.5/sbt-1.5.5.tgz
 Scala releases are downloaded from:
 
 - `https://downloads.lightbend.com`
-- `https://github.com/lampepfl/dotty/releases`
 
-The second url will be used soon for scala v3.
+Scala v3 is not supported.
 
 Samples:
 
@@ -344,6 +528,23 @@ Samples:
 https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.3.0/kustomize_v5.3.0_linux_amd64.tar.gz
 ```
 
+## `mise`
+
+mise releases are downloaded from:
+
+- `https://github.com/jdx/mise/releases`
+
+When no version is specified, the url `https://mise.jdx.dev/VERSION` is used to find the latest version.
+
+Samples:
+
+```txt
+https://github.com/jdx/mise/releases/download/v2026.2.13/mise-v2026.2.13-linux-x64.tar.xz
+https://github.com/jdx/mise/releases/download/v2026.2.13/mise-v2026.2.13-linux-arm64.tar.xz
+https://github.com/jdx/mise/releases/download/v2026.2.13/SHASUMS256.txt
+https://mise.jdx.dev/VERSION
+```
+
 ## `nix`
 
 Nix releases are downloaded from:
@@ -353,10 +554,10 @@ Nix releases are downloaded from:
 Samples:
 
 ```txt
-https://github.com/containerbase/nix-prebuild/releases/2.24.2/node-2.24.2-x86_x64.tar.xz.sha512
-https://github.com/containerbase/nix-prebuild/releases/2.24.2/node-2.24.2-aarch64.tar.xz
-https://github.com/containerbase/nix-prebuild/releases/2.24.2/node-2.24.2-x86_x64.tar.xz.sha512
-https://github.com/containerbase/nix-prebuild/releases/2.24.2/node-2.24.2-aarch64.tar.xz
+https://github.com/containerbase/nix-prebuild/releases/download/2.24.2/nix-2.24.2-x86_x64.tar.xz.sha512
+https://github.com/containerbase/nix-prebuild/releases/download/2.24.2/nix-2.24.2-x86_x64.tar.xz
+https://github.com/containerbase/nix-prebuild/releases/download/2.24.2/nix-2.24.2-aarch64.tar.xz.sha512
+https://github.com/containerbase/nix-prebuild/releases/download/2.24.2/nix-2.24.2-aarch64.tar.xz
 ```
 
 ## `node`
@@ -371,10 +572,8 @@ The first url is preferred and the second is used as fallback for older versions
 Samples:
 
 ```txt
-https://github.com/containerbase/node-prebuild/releases/18.12.0/node-18.12.0-jammy-x86_x64.tar.xz.sha512
-https://github.com/containerbase/node-prebuild/releases/18.12.0/node-18.12.0-jammy-aarch64.tar.xz
-https://github.com/containerbase/node-prebuild/releases/18.12.0/node-18.12.0-focal-x86_x64.tar.xz.sha512
-https://github.com/containerbase/node-prebuild/releases/18.12.0/node-18.12.0-focal-aarch64.tar.xz
+https://github.com/containerbase/node-prebuild/releases/download/18.12.0/node-18.12.0-jammy-x86_x64.tar.xz.sha512
+https://github.com/containerbase/node-prebuild/releases/download/18.12.0/node-18.12.0-jammy-aarch64.tar.xz
 https://nodejs.org/dist/v20.0.0/SHASUMS256.txt
 https://nodejs.org/dist/v20.0.0/node-v20.0.0-linux-x64.tar.xz
 https://nodejs.org/dist/v20.0.0/node-v20.0.0-linux-arm64.tar.xz
@@ -408,8 +607,8 @@ The `install-npm` command uses those urls too.
 Renovate additionally uses the following urls for downloading `re2` binaries.
 
 ```txt
-https://github.com/containerbase/node-re2-prebuild/releases/1.20.9/linux-arm64-115.br
-https://github.com/containerbase/node-re2-prebuild/releases/1.20.9/linux-x64-108.br
+https://github.com/containerbase/node-re2-prebuild/releases/download/1.20.9/linux-arm64-115.br
+https://github.com/containerbase/node-re2-prebuild/releases/download/1.20.9/linux-x64-108.br
 ```
 
 ## `php`
@@ -421,8 +620,8 @@ PHP releases are downloaded from:
 Samples:
 
 ```txt
-https://github.com/containerbase/php-prebuild/releases/8.3.2/php-8.3.2-jammy-x86_x64.tar.xz.sha512
-https://github.com/containerbase/php-prebuild/releases/8.3.2/php-8.3.2-jammy-x86_x64.tar.xz
+https://github.com/containerbase/php-prebuild/releases/download/8.3.2/php-8.3.2-jammy-x86_x64.tar.xz.sha512
+https://github.com/containerbase/php-prebuild/releases/download/8.3.2/php-8.3.2-jammy-x86_x64.tar.xz
 ```
 
 ### `composer`
@@ -430,32 +629,25 @@ https://github.com/containerbase/php-prebuild/releases/8.3.2/php-8.3.2-jammy-x86
 Composer releases are downloaded from:
 
 - `https://github.com/containerbase/composer-prebuild/releases`
-- `https://getcomposer.org/versions`
-
-The first url is used for downloads.
-The last url is only used when `latest` or nothing is passed as version.
-Then we try to find the latest version from getcomposer.org.
 
 Samples:
 
 ```txt
-https://github.com/containerbase/composer-prebuild/releases/2.7.7/composer-2.7.7.tar.xz.sha512
-https://github.com/containerbase/composer-prebuild/releases/2.7.7/composer-2.7.7.tar.xz
-https://getcomposer.org/versions
+https://github.com/containerbase/composer-prebuild/releases/download/2.7.7/composer-2.7.7.tar.xz.sha512
+https://github.com/containerbase/composer-prebuild/releases/download/2.7.7/composer-2.7.7.tar.xz
+https://github.com/containerbase/composer-prebuild/releases/latest/download/version
 ```
 
-## `powershell`
+## `protoc`
 
-Powershell releases are downloaded from:
+Protoc releases are downloaded from:
 
-- `https://github.com/PowerShell/PowerShell/releases`
+- `https://github.com/protocolbuffers/protobuf/releases`
 
 Samples:
 
 ```txt
-https://github.com/PowerShell/PowerShell/releases/download/v7.4.1/powershell-7.4.1-linux-arm64.tar.gz
-https://github.com/PowerShell/PowerShell/releases/download/v7.4.1/powershell-7.4.1-linux-x64.tar.gz
-https://github.com/PowerShell/PowerShell/releases/download/v7.4.1/hashes.sha256
+https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protoc-29.3-linux-x86_64.zip
 ```
 
 ## `python`
@@ -470,11 +662,11 @@ The second url is used to install and update global `pip` and `virtualenv` packa
 Samples:
 
 ```txt
-https://github.com/containerbase/python-prebuild/releases/3.12.1/python-3.12.1-jammy-x86_x64.tar.xz.sha512
-https://github.com/containerbase/python-prebuild/releases/3.12.1/python-3.12.1-jammy-x86_x64.tar.xz
+https://github.com/containerbase/python-prebuild/releases/download/3.12.1/python-3.12.1-jammy-x86_x64.tar.xz.sha512
+https://github.com/containerbase/python-prebuild/releases/download/3.12.1/python-3.12.1-jammy-x86_x64.tar.xz
 ```
 
-## `pip` tools
+### `pip` tools
 
 Pip tools are downloaded from:
 
@@ -487,6 +679,7 @@ Known tools:
 - `checkov`
 - `conan`
 - `hashin`
+- `kas`
 - `pdm`
 - `pip-tools`
 - `pipenv`
@@ -501,8 +694,8 @@ Ruby releases are downloaded from:
 Samples:
 
 ```txt
-https://github.com/containerbase/ruby-prebuild/releases/3.0.3/ruby-3.0.3-jammy-x86_x64.tar.xz.sha512
-https://github.com/containerbase/ruby-prebuild/releases/3.0.3/ruby-3.0.3-jammy-x86_x64.tar.xz
+https://github.com/containerbase/ruby-prebuild/releases/download/3.0.3/ruby-3.0.3-jammy-x86_x64.tar.xz.sha512
+https://github.com/containerbase/ruby-prebuild/releases/download/3.0.3/ruby-3.0.3-jammy-x86_x64.tar.xz
 ```
 
 ### `gem` tools
@@ -558,6 +751,19 @@ https://releases.hashicorp.com/terraform/1.0.11/terraform_1.0.11_linux_amd64.zip
 https://releases.hashicorp.com/terraform/1.0.11/terraform_1.0.11_linux_arm64.zip
 ```
 
+## `tofu`
+
+OpenTofu releases are downloaded from:
+
+- `https://github.com/opentofu/opentofu`
+
+Samples:
+
+```txt
+https://github.com/opentofu/opentofu/releases/download/v1.10.6/tofu_1.10.6_linux_amd64.tar.gz
+https://github.com/opentofu/opentofu/releases/download/v1.10.6/tofu_1.10.6_linux_arm64.tar.gz
+```
+
 ## `vendir`
 
 Vendir releases are downloaded from:
@@ -568,4 +774,17 @@ Samples:
 
 ```txt
 https://github.com/vmware-tanzu/carvel-vendir/releases/download/v0.22.0/vendir-linux-amd64
+```
+
+## `wally`
+
+Wally releases are downloaded from:
+
+- `https://github.com/containerbase/wally-prebuild/releases`
+
+Samples:
+
+```txt
+https://github.com/containerbase/wally-prebuild/releases/download/0.3.2/wally-0.3.2-jammy-x86_x64.tar.xz.sha512
+https://github.com/containerbase/wally-prebuild/releases/download/0.3.2/wally-0.3.2-jammy-x86_x64.tar.xz
 ```

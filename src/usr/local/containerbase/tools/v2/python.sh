@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export NEEDS_PREPARE=1
-
 # sets the correct shebang for python
 fix_python_shebangs() {
   # https://github.com/koalaman/shellcheck/wiki/SC2044
@@ -27,11 +25,11 @@ function prepare_tool() {
 
   version_codename="$(get_distro)"
   case "${version_codename}" in
-    "focal");;
     "jammy");;
     "noble");;
+    "resolute");;
     *)
-      echo "Tool '${TOOL_NAME}' not supported on: ${version_codename}! Please use ubuntu 'focal' or 'jammy'." >&2
+      echo "Tool '${TOOL_NAME}' not supported on: ${version_codename}! Please use ubuntu 'noble' or 'resolute'." >&2
       exit 1
     ;;
   esac
@@ -70,7 +68,7 @@ function install_tool () {
   base_url="https://github.com/containerbase/${name}-prebuild/releases/download"
   version_codename=$(get_distro)
 
-  if [[ "${version_codename}" == "noble" ]]; then
+  if [[ "${version_codename}" == "noble" || "${version_codename}" == "resolute" ]]; then
     version_codename="jammy"
   fi
 
@@ -126,7 +124,9 @@ function link_tool () {
   shell_wrapper pip "${versioned_tool_path}/bin"
   shell_wrapper "pip${MAJOR}" "${versioned_tool_path}/bin"
   shell_wrapper "pip${MAJOR}.${MINOR}" "${versioned_tool_path}/bin"
+}
 
-  [[ -n $SKIP_VERSION ]] || python --version
-  [[ -n $SKIP_VERSION ]] || PYTHONWARNINGS=ignore pip --version
+function test_tool () {
+  python --version
+  PYTHONWARNINGS=ignore pip --version
 }

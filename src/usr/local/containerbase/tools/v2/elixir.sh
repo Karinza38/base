@@ -1,5 +1,4 @@
 #!/bin/bash
-export NEEDS_PREPARE=1
 
 function prepare_tool() {
   local path
@@ -36,18 +35,22 @@ function install_tool () {
   local versioned_tool_path
   local file
   local base_url="https://github.com/elixir-lang/elixir/releases/download"
-  local base_file="Precompiled.zip"
+  local base_file=elixir-otp-27.zip
 
   check_command erl
 
-  # https://github.com/elixir-lang/elixir/releases/tag/v1.14.0
+  # https://github.com/elixir-lang/elixir/releases
   # https://hexdocs.pm/elixir/compatibility-and-deprecations.html#between-elixir-and-erlang-otp
-  if [ "$MAJOR" -eq 1 ] && [ "$MINOR" -ge 17 ]; then
-    base_file=elixir-otp-25.zip
-  elif [ "$MAJOR" -eq 1 ] && [ "$MINOR" -ge 15 ]; then
-    base_file=elixir-otp-24.zip
-  elif [ "$MAJOR" -eq 1 ] && [ "$MINOR" -eq 14 ]; then
+  if dpkg --compare-versions "${TOOL_VERSION}" lt 1.14.0; then
+    base_file=Precompiled.zip
+  elif dpkg --compare-versions "${TOOL_VERSION}" lt 1.15.0; then
     base_file=elixir-otp-23.zip
+  elif dpkg --compare-versions "${TOOL_VERSION}" lt 1.17.0; then
+    base_file=elixir-otp-24.zip
+  elif dpkg --compare-versions "${TOOL_VERSION}" lt 1.19.0; then
+    base_file=elixir-otp-25.zip
+  elif dpkg --compare-versions "${TOOL_VERSION}" lt 1.20.0; then
+    base_file=elixir-otp-26.zip
   fi
 
   file=$(get_from_url "${base_url}/v${TOOL_VERSION}/${base_file}")
@@ -63,9 +66,6 @@ function link_tool () {
   shell_wrapper "${TOOL_NAME}" "${versioned_tool_path}/bin"
   shell_wrapper mix "${versioned_tool_path}/bin"
 
-  [[ -n $SKIP_VERSION ]] || elixir --version
-  [[ -n $SKIP_VERSION ]] || mix --version
-
   if [[ $(is_root) -eq 0 ]]; then
     su -c 'mix local.hex --force' "${USER_NAME}"
     su -c 'mix local.rebar --force' "${USER_NAME}"
@@ -75,4 +75,9 @@ function link_tool () {
   fi
 
   # TODO: check rights of files and folder in ~/.mix and ~/.hex
+}
+
+function test_tool () {
+  elixir --version
+  mix --version
 }

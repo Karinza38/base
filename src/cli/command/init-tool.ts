@@ -1,8 +1,10 @@
 import { Command, Option } from 'clipanion';
 import prettyMilliseconds from 'pretty-ms';
-import { initializeTools } from '../prepare-tool';
-import { logger } from '../utils';
+import { initializeTools } from '../prepare-tool/index.ts';
+import { logger } from '../utils/index.ts';
+import { command } from './utils.ts';
 
+@command('containerbase-cli')
 export class InitToolCommand extends Command {
   static override paths = [['init', 'tool']];
 
@@ -32,6 +34,7 @@ export class InitToolCommand extends Command {
         logger.fatal(err.message);
       }
       return 1;
+      /* v8 ignore next -- coverage bug */
     } finally {
       if (error) {
         logger.fatal(

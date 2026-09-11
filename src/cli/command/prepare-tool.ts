@@ -1,8 +1,10 @@
 import { Command, Option } from 'clipanion';
 import prettyMilliseconds from 'pretty-ms';
-import { prepareTools } from '../prepare-tool';
-import { logger } from '../utils';
+import { prepareTools } from '../prepare-tool/index.ts';
+import { logger } from '../utils/index.ts';
+import { command } from './utils.ts';
 
+@command('containerbase-cli')
 export class PrepareToolCommand extends Command {
   static override paths = [['prepare', 'tool'], ['pt']];
 
@@ -31,6 +33,7 @@ export class PrepareToolCommand extends Command {
         logger.fatal(err.message);
       }
       return 1;
+      /* v8 ignore next -- coverage bug */
     } finally {
       if (error) {
         logger.fatal(
@@ -45,8 +48,9 @@ export class PrepareToolCommand extends Command {
   }
 }
 
+@command('prepare-tool')
 export class PrepareToolShortCommand extends PrepareToolCommand {
-  static override paths = [];
+  static override paths = [Command.Default];
 
   static override usage = Command.Usage({
     description: 'Prepares a tool into the container.',

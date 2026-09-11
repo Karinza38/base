@@ -4,25 +4,27 @@ import { join } from 'node:path';
 import { version } from 'node:process';
 import { pipeline } from 'node:stream/promises';
 import merge from 'deepmerge';
-import {
+import got, {
   HTTPError,
   type OptionsInit,
   type OptionsOfJSONResponseBody,
   type OptionsOfTextResponseBody,
-  got,
 } from 'got';
-import { inject, injectable } from 'inversify';
-import { logger } from '../utils';
-import { hash, hashFile } from '../utils/hash';
-import { EnvService } from './env.service';
-import { PathService } from './path.service';
+import { inject, injectable, postConstruct } from 'inversify';
+import { hash, hashFile } from '../utils/hash.ts';
+import { logger } from '../utils/index.ts';
+import { EnvService } from './env.service.ts';
+import { PathService } from './path.service.ts';
 
-export type HttpChecksumType =
-  | 'sha1'
-  | 'sha224'
-  | 'sha256'
-  | 'sha384'
-  | 'sha512';
+export const HttpChecksumTypes = [
+  'sha1',
+  'sha224',
+  'sha256',
+  'sha384',
+  'sha512',
+] as const;
+
+export type HttpChecksumType = (typeof HttpChecksumTypes)[number];
 
 export interface HttpDownloadConfig {
   url: string;
@@ -33,18 +35,23 @@ export interface HttpDownloadConfig {
 
 @injectable()
 export class HttpService {
-  private _opts: Pick<OptionsInit, 'headers'>;
-  constructor(
-    @inject(EnvService) private envSvc: EnvService,
-    @inject(PathService) private pathSvc: PathService,
-  ) {
-    this._opts = {
+  @inject(EnvService)
+  private readonly envSvc!: EnvService;
+
+  @inject(PathService)
+  private readonly pathSvc!: PathService;
+
+  private readonly _opts: Pick<OptionsInit, 'headers'> = {};
+
+  @postConstruct()
+  protected [Symbol('construct')](): void {
+    Object.assign(this._opts, {
       headers: {
         'user-agent': `containerbase/${
           this.envSvc.version
         } node/${version.replace(/^v/, '')} (https://github.com/containerbase)`,
       },
-    };
+    });
   }
 
   async download({
@@ -169,11 +176,11 @@ export class HttpService {
       try {
         return await got
           .get(
+            nUrl,
             merge.all([
               this._opts,
               opts,
               {
-                url: nUrl,
                 resolveBodyOnly: false,
               },
             ]),

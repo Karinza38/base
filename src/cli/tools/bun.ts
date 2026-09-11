@@ -1,16 +1,10 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../install-tool/base-install.service';
-import {
-  CompressionService,
-  EnvService,
-  HttpService,
-  PathService,
-} from '../services';
+import { injectFromHierarchy, injectable } from 'inversify';
+import { BaseInstallService } from '../install-tool/base-install.service.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class BunInstallService extends BaseInstallService {
   readonly name = 'bun';
 
@@ -23,18 +17,22 @@ export class BunInstallService extends BaseInstallService {
     }
   }
 
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-    @inject(CompressionService) private compress: CompressionService,
-  ) {
-    super(pathSvc, envSvc);
-  }
-
   override async install(version: string): Promise<void> {
     const baseUrl = `https://github.com/oven-sh/bun/releases/download/bun-v${version}/`;
-    const filename = `bun-linux-${this.ghArch}.zip`;
+    let { ghArch } = this;
+
+    if (ghArch === 'x64') {
+      try {
+        const cpuInfo = await fs.readFile('/proc/cpuinfo', 'utf-8');
+        if (!cpuInfo.includes('avx2')) {
+          ghArch = 'x64-baseline';
+        }
+      } catch {
+        ghArch = 'x64-baseline';
+      }
+    }
+
+    const filename = `bun-linux-${ghArch}.zip`;
 
     const checksumFile = await this.http.download({
       url: `${baseUrl}SHASUMS256.txt`,
@@ -71,6 +69,6 @@ export class BunInstallService extends BaseInstallService {
   }
 
   override async test(_version: string): Promise<void> {
-    await execa(this.name, ['--version'], { stdio: ['inherit', 'inherit', 1] });
+    await this._spawn(this.name, ['--version']);
   }
 }

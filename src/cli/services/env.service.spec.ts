@@ -1,9 +1,10 @@
 import { sep } from 'node:path';
 import { env } from 'node:process';
-import type { Container } from 'inversify';
+import { Container } from 'inversify';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
-import { EnvService, rootContainer } from '.';
-import { rootPath } from '~test/path';
+import { EnvService } from './index.ts';
+import { testContainer } from '~test/di.ts';
+import { rootPath } from '~test/path.ts';
 
 const mocks = vi.hoisted(() => ({ arch: vi.fn() }));
 
@@ -19,113 +20,114 @@ vi.mock('node:process', () => ({
 describe('cli/services/env.service', () => {
   let child!: Container;
   let rootDir: string | undefined;
+  let svc!: EnvService;
+
+  async function init() {
+    child = await testContainer();
+    svc = await child.getAsync(EnvService);
+  }
 
   beforeAll(() => {
     rootDir = globalThis.rootDir;
   });
 
-  beforeEach(() => {
-    child = rootContainer.createChild();
+  beforeEach(async () => {
     globalThis.rootDir = rootDir;
     mocks.arch.mockReturnValue('x64');
+    await init();
   });
 
-  test('arch', () => {
-    mocks.arch.mockReturnValue('arm64');
-    expect(child.get(EnvService).arch).toBe('arm64');
+  test('arch', async () => {
+    expect(svc.arch).toBe('amd64');
 
-    mocks.arch.mockReturnValue('x64');
-    expect(child.get(EnvService).arch).toBe('amd64');
+    mocks.arch.mockReturnValue('arm64');
+    await init();
+    expect(svc.arch).toBe('arm64');
 
     mocks.arch.mockReturnValue('invalid');
-    expect(() => child.get(EnvService).arch).toThrow();
+    await expect(init()).rejects.toThrow();
   });
 
   test('isRoot', () => {
-    expect(child.get(EnvService).isRoot).toBe(true);
+    expect(svc.isRoot).toBe(true);
   });
 
   test('home', () => {
-    expect(child.get(EnvService).home).toBeUndefined();
+    expect(svc.home).toBeUndefined();
   });
 
   test('rootHome', () => {
-    expect(child.get(EnvService).rootHome).toBe(rootPath('root'));
+    expect(svc.rootHome).toBe(rootPath('root'));
   });
 
   test('userHome', () => {
-    expect(child.get(EnvService).userHome).toBe(rootPath('home/ubuntu'));
+    expect(svc.userHome).toBe(rootPath('home/ubuntu'));
   });
 
   test('userId', () => {
-    expect(child.get(EnvService).userId).toBe(12021);
+    expect(svc.userId).toBe(12021);
   });
 
   test('umask', () => {
-    const e = child.get(EnvService);
-    expect(e.umask).toBe(0o755);
-    Object.assign(e, { uid: 12021 });
-    expect(e.umask).toBe(0o775);
+    expect(svc.umask).toBe(0o755);
+    Object.assign(svc, { uid: 12021 });
+    expect(svc.umask).toBe(0o775);
   });
 
   test('skipTests', () => {
-    expect(child.get(EnvService).skipTests).toBe(false);
+    expect(svc.skipTests).toBe(false);
   });
 
   test('cacheDir', () => {
     delete env.CONTAINERBASE_CACHE_DIR;
-    expect(child.get(EnvService).cacheDir).toBeNull();
+    expect(svc.cacheDir).toBeNull();
   });
 
   describe('rootDir', () => {
     test('uses test root', () => {
-      const e = child.get(EnvService);
-      expect(e.rootDir).toBe(rootPath());
+      expect(svc.rootDir).toBe(rootPath());
     });
 
     test('uses default root', () => {
       globalThis.rootDir = undefined;
-      const e = child.get(EnvService);
-      expect(e.rootDir).toBe(sep);
+      expect(svc.rootDir).toBe(sep);
     });
   });
 
-  test('isToolIgnored', () => {
-    let e = child.get(EnvService);
-    expect(e.isToolIgnored('npm')).toBe(false);
-    expect(e.isToolIgnored('node')).toBe(false);
+  test('isToolIgnored', async () => {
+    expect(svc.isToolIgnored('npm')).toBe(false);
+    expect(svc.isToolIgnored('node')).toBe(false);
 
     env.IGNORED_TOOLS = 'npm,yarn';
-    e = child.get(EnvService);
-    expect(e.isToolIgnored('npm')).toBe(true);
-    expect(e.isToolIgnored('node')).toBe(false);
+    await init();
+    expect(svc.isToolIgnored('npm')).toBe(true);
+    expect(svc.isToolIgnored('node')).toBe(false);
   });
 
   test('replaceUrl', () => {
-    const e = child.get(EnvService);
     env.URL_REPLACE_0_FROM = 'https://example.com';
     env.URL_REPLACE_0_TO = 'https://example.test';
     env.URL_REPLACE_1_FROM = 'https://cdn.example.com/registry.npmjs.org';
     env.URL_REPLACE_1_TO = 'https://npm.example.test';
 
-    expect(e.replaceUrl('https://example.com/file.txt')).toBe(
+    expect(svc.replaceUrl('https://example.com/file.txt')).toBe(
       'https://example.test/file.txt',
     );
-    expect(e.replaceUrl('https://example.org/file.txt')).toBe(
+    expect(svc.replaceUrl('https://example.org/file.txt')).toBe(
       'https://example.org/file.txt',
     );
 
     env.CONTAINERBASE_CDN = `https://cdn.example.com/`;
-    expect(e.replaceUrl('https://localhost')).toBe(
+    expect(svc.replaceUrl('https://localhost')).toBe(
       'https://cdn.example.com/localhost',
     );
-    expect(e.replaceUrl('https://example.test/file.txt')).toBe(
+    expect(svc.replaceUrl('https://example.test/file.txt')).toBe(
       'https://cdn.example.com/example.test/file.txt',
     );
-    expect(e.replaceUrl('https://registry.npmjs.org')).toBe(
+    expect(svc.replaceUrl('https://registry.npmjs.org')).toBe(
       'https://npm.example.test',
     );
-    expect(e.replaceUrl('https://registry.npmjs.org', false)).toBe(
+    expect(svc.replaceUrl('https://registry.npmjs.org', false)).toBe(
       'https://registry.npmjs.org',
     );
   });

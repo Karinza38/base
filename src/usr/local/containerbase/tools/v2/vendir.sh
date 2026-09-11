@@ -5,7 +5,7 @@ function install_tool () {
   local file
   local arch=linux-amd64
 
-  if [[ "$(uname -p)" = "aarch64" ]]; then
+  if [[ "${ARCHITECTURE}" = "aarch64" ]]; then
     arch=linux-arm64
   fi
 
@@ -19,5 +19,8 @@ function install_tool () {
 
 function link_tool () {
   shell_wrapper "${TOOL_NAME}" "$(find_versioned_tool_path)/bin"
-  [[ -n $SKIP_VERSION ]] || vendir --version
+}
+
+function test_tool () {
+  vendir --version
 }

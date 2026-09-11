@@ -1,7 +1,10 @@
 import { Command } from 'clipanion';
-import { InstallToolCommand } from './install-tool';
+import { InstallToolCommand } from './install-tool.ts';
+import { command } from './utils.ts';
 
+@command('containerbase-cli')
 export class InstallGemCommand extends InstallToolCommand {
+  static override paths = [['install', 'gem']];
   static override usage = Command.Usage({
     description: 'Installs a gem package into the container.',
     examples: [
@@ -17,6 +20,7 @@ export class InstallGemCommand extends InstallToolCommand {
   protected override type = 'gem' as const;
 }
 
+@command('install-gem')
 export class InstallGemShortCommand extends InstallGemCommand {
   static override paths = [Command.Default];
 

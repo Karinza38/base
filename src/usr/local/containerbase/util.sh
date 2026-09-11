@@ -18,12 +18,6 @@ if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
 # shellcheck source=/dev/null
 . "${DIR}/utils/version.sh"
 # shellcheck source=/dev/null
-. "${DIR}/utils/install.sh"
-# shellcheck source=/dev/null
-. "${DIR}/utils/init.sh"
-# shellcheck source=/dev/null
-. "${DIR}/utils/prepare.sh"
-# shellcheck source=/dev/null
 . "${DIR}/utils/user.sh"
 
 check_debug() {
@@ -142,29 +136,23 @@ function apt_upgrade () {
 
 
 function require_arch () {
-  local arch
-  # shellcheck source=/dev/null
-  arch=$(uname -p)
-  case "$arch" in
+  case "$ARCHITECTURE" in
   "x86_64") ;; #supported
   "aarch64") ;; #supported
   *)
-    echo "Arch not supported: ${arch}! Please use 'x86_64' or 'aarch64'." >&2
+    echo "Arch not supported: ${ARCHITECTURE}! Please use 'x86_64' or 'aarch64'." >&2
     exit 1
    ;;
   esac
 }
 
 function require_distro () {
-  local VERSION_CODENAME
-  # shellcheck source=/dev/null
-  VERSION_CODENAME=$(. /etc/os-release && echo "${VERSION_CODENAME}")
-  case "$VERSION_CODENAME" in
-  "focal") ;; #supported
+  case "$DISTRO_CODENAME" in
   "jammy") ;; #supported
   "noble") ;; #supported
+  "resolute") ;; #supported
   *)
-    echo "Distro not supported: ${VERSION_CODENAME}! Please use ubuntu 'focal', 'jammy' or 'noble'." >&2
+    echo "Distro not supported: ${DISTRO_CODENAME}! Please use ubuntu 'noble' or 'resolute'." >&2
     exit 1
    ;;
   esac
@@ -172,8 +160,7 @@ function require_distro () {
 
 function get_distro() {
   require_distro
-  # shellcheck source=/dev/null disable=SC2005
-  echo "$(. /etc/os-release && echo "${VERSION_CODENAME}")"
+  echo "${DISTRO_CODENAME}"
 }
 
 function require_root () {

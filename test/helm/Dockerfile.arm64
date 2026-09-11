@@ -24,7 +24,7 @@ RUN install-containerbase
 #--------------------------------------
 FROM ${BASE_IMAGE} AS base
 
-RUN uname -p | tee | grep aarch64
+RUN arch | tee | grep aarch64
 RUN touch /.dummy
 
 ARG APT_HTTP_PROXY
@@ -38,7 +38,7 @@ ARG CONTAINERBASE_LOG_LEVEL
 FROM base AS test-helm
 
 # renovate: datasource=github-releases packageName=helm/helm
-RUN install-tool helm v3.16.3
+RUN install-tool helm v4.2.4
 
 #--------------------------------------
 # Image: final

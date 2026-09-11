@@ -24,7 +24,7 @@ RUN install-containerbase
 #--------------------------------------
 FROM ${BASE_IMAGE} AS base
 
-RUN uname -p | tee | grep aarch64
+RUN arch | tee | grep aarch64
 RUN touch /.dummy
 
 ARG APT_HTTP_PROXY
@@ -38,7 +38,7 @@ ARG CONTAINERBASE_LOG_LEVEL
 FROM base AS test-flux
 
 # renovate: datasource=github-releases packageName=fluxcd/flux2
-RUN install-tool flux v2.4.0
+RUN install-tool flux v2.9.5
 
 #--------------------------------------
 # Image: final

@@ -1,6 +1,6 @@
 import { Cli } from 'clipanion';
 import { describe, expect, test, vi } from 'vitest';
-import { prepareCommands } from '.';
+import { registerCommands } from './index.ts';
 
 const mocks = vi.hoisted(() => ({
   installTool: vi.fn(),
@@ -8,17 +8,19 @@ const mocks = vi.hoisted(() => ({
   initializeTools: vi.fn(),
 }));
 
-vi.mock('../install-tool', () => mocks);
-vi.mock('../prepare-tool', () => mocks);
+vi.mock('../install-tool/index.ts', () => mocks);
+vi.mock('../prepare-tool/index.ts', () => mocks);
 
 describe('cli/command/init-tool', () => {
   test('init-tool', async () => {
     const cli = new Cli({ binaryName: 'cli' });
-    prepareCommands(cli, null);
+    registerCommands(cli, null);
 
     expect(await cli.run(['init', 'tool', 'node'])).toBe(0);
-    expect(mocks.initializeTools).toHaveBeenCalledOnce();
-    expect(mocks.initializeTools).toHaveBeenCalledWith(['node'], false);
+    expect(mocks.initializeTools).toHaveBeenCalledExactlyOnceWith(
+      ['node'],
+      false,
+    );
 
     mocks.initializeTools.mockRejectedValueOnce(new Error('test'));
     expect(await cli.run(['init', 'tool', 'node'])).toBe(1);

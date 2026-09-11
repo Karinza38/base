@@ -1,31 +1,17 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
 import { isNonEmptyStringAndNotWhitespace } from '@sindresorhus/is';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../../install-tool/base-install.service';
-import { ToolVersionResolver } from '../../install-tool/tool-version-resolver';
-import {
-  CompressionService,
-  EnvService,
-  HttpService,
-  PathService,
-} from '../../services';
-import { semverCoerce } from '../../utils';
-import { GradleVersionData } from './schema';
+import { injectFromHierarchy, injectable } from 'inversify';
+import { BaseInstallService } from '../../install-tool/base-install.service.ts';
+import { ToolVersionResolver } from '../../install-tool/tool-version-resolver.ts';
+import { semverCoerce } from '../../utils/index.ts';
+import { GradleVersionData } from './schema.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class GradleInstallService extends BaseInstallService {
   readonly name = 'gradle';
-
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-    @inject(CompressionService) private compress: CompressionService,
-  ) {
-    super(pathSvc, envSvc);
-  }
+  override readonly parent = 'java';
 
   override async install(version: string): Promise<void> {
     const name = this.name;
@@ -42,8 +28,7 @@ export class GradleInstallService extends BaseInstallService {
 
     await this.pathSvc.ensureToolPath(this.name);
 
-    let path = await this.pathSvc.ensureToolPath(this.name);
-    path = await this.pathSvc.createVersionedToolPath(this.name, version);
+    const path = await this.pathSvc.createVersionedToolPath(this.name, version);
 
     await this.compress.extract({ file, cwd: path, strip: 1 });
   }
@@ -54,9 +39,7 @@ export class GradleInstallService extends BaseInstallService {
   }
 
   override async test(_version: string): Promise<void> {
-    await execa('gradle', ['--version'], {
-      stdio: ['inherit', 'inherit', 1],
-    });
+    await this._spawn('gradle', ['--version']);
   }
 
   override validate(version: string): Promise<boolean> {
@@ -70,6 +53,7 @@ export class GradleInstallService extends BaseInstallService {
 }
 
 @injectable()
+@injectFromHierarchy()
 export class GradleVersionResolver extends ToolVersionResolver {
   readonly tool = 'gradle';
 

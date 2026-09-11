@@ -1,36 +1,64 @@
-import { writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { codeBlock } from 'common-tags';
-import { injectable } from 'inversify';
-import type { EnvService, PathService } from '../services';
-import { NoInitTools, NoPrepareTools } from '../tools';
-import { isValid, tool2path } from '../utils';
-
-export interface ShellWrapperConfig {
-  name?: string;
-  srcDir: string;
-  exports?: string;
-
-  args?: string;
-
-  /**
-   * Which extra tool envs to load.
-   * Eg. load php env before composer env.
-   */
-  extraToolEnvs?: string[];
-}
+import fs from 'node:fs/promises';
+import { inject, injectable } from 'inversify';
+import {
+  CompressionService,
+  EnvService,
+  HttpService,
+  PathService,
+} from '../services/index.ts';
+import { LinkToolService, type ShellWrapperConfig } from '../services/index.ts';
+import { NoInitTools, NoPrepareTools } from '../tools/index.ts';
+import {
+  type InstallToolType,
+  type SpawnOptions,
+  type SpawnResult,
+  isValid,
+  spawn,
+} from '../utils/index.ts';
 
 @injectable()
 export abstract class BaseInstallService {
+  @inject(PathService)
+  protected readonly pathSvc!: PathService;
+  @inject(EnvService)
+  protected readonly envSvc!: EnvService;
+  @inject(HttpService)
+  protected readonly http!: HttpService;
+  @inject(CompressionService)
+  protected readonly compress!: CompressionService;
+
+  @inject(LinkToolService)
+  private readonly _link!: LinkToolService;
+
+  /**
+   * Optional tool alias used to refer to this tool as parent.
+   */
+  get alias(): string {
+    return this.name;
+  }
+
+  /**
+   * Tool name
+   */
   abstract readonly name: string;
 
-  constructor(
-    protected readonly pathSvc: PathService,
-    protected readonly envSvc: EnvService,
-  ) {}
+  /**
+   * A tool can depend on another tool to work.
+   * Eg. composer depends on php.
+   */
+  readonly parent?: string;
+
+  /**
+   * Optional tool type for dynamic uninstallation support.
+   * Currently `npm`, `gem` or `pip`.
+   */
+  readonly type?: InstallToolType;
 
   abstract install(version: string): Promise<void>;
 
+  /**
+   * @deprecated Unused
+   */
   async isInstalled(version: string): Promise<boolean> {
     return !!(await this.pathSvc.findVersionedToolPath(this.name, version));
   }
@@ -53,6 +81,11 @@ export abstract class BaseInstallService {
     return !NoPrepareTools.includes(this.name);
   }
 
+  /**
+   * Post-installation steps.
+   * Used for relinking executables.
+   * @param version Version that was installed
+   */
   postInstall(_version: string): Promise<void> {
     return Promise.resolve();
   }
@@ -65,52 +98,26 @@ export abstract class BaseInstallService {
     return this.name;
   }
 
+  async uninstall(version: string): Promise<void> {
+    await fs.rm(this.pathSvc.versionedToolPath(this.name, version), {
+      recursive: true,
+      force: true,
+    });
+  }
+
   validate(version: string): Promise<boolean> {
     return Promise.resolve(isValid(version));
   }
 
-  protected async shellwrapper({
-    args,
-    name,
-    srcDir,
-    exports,
-    extraToolEnvs,
-  }: ShellWrapperConfig): Promise<void> {
-    const tgt = join(this.pathSvc.binDir, name ?? this.name);
+  protected shellwrapper(options: ShellWrapperConfig): Promise<void> {
+    return this._link.shellwrapper(this.name, options);
+  }
 
-    const envs = [...(extraToolEnvs ?? []), this.name].map(tool2path);
-    let content = codeBlock`
-      #!/bin/bash
-
-      if [[ -z "\${CONTAINERBASE_ENV+x}" ]]; then
-        . ${this.pathSvc.envFile}
-      fi
-
-      if [[ ! -f "${this.pathSvc.toolInitPath(this.name)}" ]]; then
-        # set logging to only warn and above to not interfere with tool output
-        CONTAINERBASE_LOG_LEVEL=warn containerbase-cli init tool "${this.name}"
-      fi
-
-      # load tool envs
-      for n in ${envs.join(' ')}; do
-        if [[ -f "${this.pathSvc.toolsPath}/\${n}/env.sh" ]]; then
-          . "${this.pathSvc.toolsPath}/\${n}/env.sh"
-        fi
-      done
-      unset n
-      `;
-
-    if (exports) {
-      content += `\nexport ${exports}`;
-    }
-
-    content += `\n${srcDir}/${name ?? this.name}`;
-    if (args) {
-      content += ` ${args}`;
-    }
-    content += ` "$@"\n`;
-
-    await writeFile(tgt, content, { encoding: 'utf8' });
-    await this.pathSvc.setOwner({ path: tgt });
+  protected _spawn(
+    command: string,
+    args: string[],
+    options?: SpawnOptions,
+  ): Promise<SpawnResult> {
+    return spawn(command, args, { cwd: this.envSvc.tmpDir, ...options });
   }
 }

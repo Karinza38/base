@@ -5,27 +5,30 @@ import { isNonEmptyStringAndNotWhitespace, isString } from '@sindresorhus/is';
 import { execa } from 'execa';
 import { inject, injectable } from 'inversify';
 import type { PackageJson } from 'type-fest';
-import { BaseInstallService } from '../../install-tool/base-install.service';
-import { EnvService, PathService, VersionService } from '../../services';
-import { logger, parse, pathExists } from '../../utils';
+import { BaseInstallService } from '../../install-tool/base-install.service.ts';
+import {
+  type EnvService,
+  type PathService,
+  VersionService,
+} from '../../services/index.ts';
+import { logger, parse, pathExists, spawn } from '../../utils/index.ts';
 
 const defaultRegistry = 'https://registry.npmjs.org/';
 
 @injectable()
 export abstract class NodeBaseInstallService extends BaseInstallService {
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(VersionService) protected versionSvc: VersionService,
-  ) {
-    super(pathSvc, envSvc);
-  }
+  @inject(VersionService)
+  protected readonly versionSvc!: VersionService;
 
   protected prepareEnv(_version: string, tmp: string): NodeJS.ProcessEnv {
     const env: NodeJS.ProcessEnv = {
       NO_UPDATE_NOTIFIER: '1',
       npm_config_update_notifier: 'false',
       npm_config_fund: 'false',
+      // node v24.6.0, v22.19.0
+      // NODE_USE_SYSTEM_CA: '1', // not compatible with --use-openssl-ca
+      // node v6.11.0
+      NODE_OPTIONS: `${penv.NODE_OPTIONS ?? ''} --use-openssl-ca`,
     };
 
     if (!penv.npm_config_cache && !penv.NPM_CONFIG_CACHE) {
@@ -34,7 +37,7 @@ export abstract class NodeBaseInstallService extends BaseInstallService {
 
     const registry = this.envSvc.replaceUrl(
       defaultRegistry,
-      isNonEmptyStringAndNotWhitespace(env.CONTAINERBASE_CDN_NPM),
+      isNonEmptyStringAndNotWhitespace(penv.CONTAINERBASE_CDN_NPM),
     );
     if (registry !== defaultRegistry) {
       env.npm_config_registry = registry;
@@ -49,25 +52,12 @@ export abstract class NodeBaseInstallService extends BaseInstallService {
     env: NodeJS.ProcessEnv,
     global = false,
   ): Promise<void> {
+    const nodeModulesRoot = global ? `${prefix}/lib` : prefix;
+    const cwd = `${nodeModulesRoot}/node_modules/npm/node_modules/npm-lifecycle`;
     const res = await execa(
       join(prefix, 'bin/npm'),
-      [
-        'explore',
-        'npm',
-        ...(global ? ['-g'] : []),
-        '--prefix',
-        prefix,
-        // '--silent',
-        '--',
-        'npm',
-        'install',
-        'node-gyp@latest',
-        '--no-audit',
-        '--cache',
-        tmp,
-        '--silent',
-      ],
-      { reject: false, env, cwd: this.pathSvc.installDir, all: true },
+      ['install', 'node-gyp@latest', '--no-audit', '--cache', tmp],
+      { reject: false, env, cwd, all: true },
     );
 
     if (res.failed) {
@@ -79,6 +69,8 @@ export abstract class NodeBaseInstallService extends BaseInstallService {
 
 @injectable()
 export abstract class NpmBaseInstallService extends NodeBaseInstallService {
+  override readonly parent = 'node';
+
   protected tool(_version: string): string {
     return this.name;
   }
@@ -192,15 +184,7 @@ export abstract class NpmBaseInstallService extends NodeBaseInstallService {
     if (idx > 0) {
       name = name.slice(idx + 1);
     }
-    await execa(name, ['--version'], { stdio: 'inherit' });
-  }
-
-  override async validate(version: string): Promise<boolean> {
-    if (!(await super.validate(version))) {
-      return false;
-    }
-
-    return (await this.versionSvc.find('node')) !== null;
+    await this._spawn(name, ['--version']);
   }
 
   private getNodeNpm(nodeVersion: string): string {
@@ -208,12 +192,12 @@ export abstract class NpmBaseInstallService extends NodeBaseInstallService {
   }
 
   protected async getNodeVersion(): Promise<string> {
-    const nodeVersion = await this.versionSvc.find('node');
+    const nodeVersion = await this.versionSvc.getCurrent('node');
 
     if (!nodeVersion) {
       throw new Error('Node not installed');
     }
-    return nodeVersion;
+    return nodeVersion.tool.version;
   }
 
   protected getAdditionalArgs(): string[] {
@@ -275,8 +259,8 @@ export async function prepareUserConfig({
   await appendFile(npmrc, `prefix = "${prefix}"`);
   await mkdir(`${home}/.npm/_logs`, { recursive: true });
   // fs isn't recursive, so we use system binaries
-  await execa('chown', ['-R', name, prefix, npmrc, `${home}/.npm`]);
-  await execa('chmod', ['-R', 'g+w', prefix, npmrc, `${home}/.npm`]);
+  await spawn('chown', ['-R', name, prefix, npmrc, `${home}/.npm`]);
+  await spawn('chmod', ['-R', 'g+w', prefix, npmrc, `${home}/.npm`]);
 }
 
 async function readPackageJson(path: string): Promise<PackageJson> {

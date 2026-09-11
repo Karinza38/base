@@ -7,6 +7,9 @@ variable "FILE" {
 variable "TAG" {
   default = "latest"
 }
+variable "CHANNEL" {
+  default = ""
+}
 
 variable "BASE_IMAGE" {
   default = null
@@ -44,8 +47,20 @@ group "test" {
   targets = ["build-test", "build-arm64"]
 }
 
+group "test-base" {
+  targets = ["build-base"]
+}
+
 group "test-distro" {
   targets = ["build-distro"]
+}
+
+group "test-x86_64" {
+  targets = ["build-test"]
+}
+
+group "test-aarch64" {
+  targets = ["build-arm64"]
 }
 
 
@@ -60,7 +75,11 @@ target "settings" {
   }
   cache-from = [
     "type=registry,ref=ghcr.io/${OWNER}/cache:${FILE}",
+    notequal("", CHANNEL) ? "type=registry,ref=ghcr.io/${OWNER}/cache:${FILE}-${CHANNEL}" : "",
   ]
+  extra-hosts = {
+    "host.docker.internal" = "host-gateway"
+  }
 }
 
 
@@ -74,20 +93,17 @@ target "test-settings" {
 target "build" {
   inherits = ["settings"]
   tags = [
-    "ghcr.io/${OWNER}/${FILE}",
     "ghcr.io/${OWNER}/${FILE}:${TAG}",
+    notequal("", CHANNEL) ? "ghcr.io/${OWNER}/${FILE}:${CHANNEL}" : "ghcr.io/${OWNER}/${FILE}",
+
     "${OWNER}/${FILE}:${TAG}",
-    "${OWNER}/${FILE}"
+    notequal("", CHANNEL) ? "${OWNER}/${FILE}:${CHANNEL}" : "${OWNER}/${FILE}"
   ]
 }
 
 target "build-ttl" {
   inherits = ["settings"]
   output   = ["type=registry"]
-  platforms = [
-    "linux/amd64",
-    "linux/arm64",
-  ]
   tags = [ ]
 }
 
@@ -95,12 +111,21 @@ target "build-docker" {
   inherits = ["settings"]
   output   = ["type=docker"]
   tags = [
-    "ghcr.io/${OWNER}/${FILE}",
     "ghcr.io/${OWNER}/${FILE}:${TAG}",
+    notequal("", CHANNEL) ? "ghcr.io/${OWNER}/${FILE}:${CHANNEL}" : "ghcr.io/${OWNER}/${FILE}",
+
     "${OWNER}/${FILE}:${TAG}",
-    "${OWNER}/${FILE}",
+    notequal("", CHANNEL) ? "${OWNER}/${FILE}:${CHANNEL}" : "${OWNER}/${FILE}",
     "containerbase/test"
   ]
+}
+
+target "build-base" {
+  inherits   = ["test-settings"]
+  args = {
+    BASE_IMAGE = "${TAG}"
+  }
+  dockerfile = "./test/Dockerfile.base"
 }
 
 target "build-distro" {
@@ -125,11 +150,14 @@ target "build-arm64" {
 target "push" {
   inherits = ["settings"]
   output   = ["type=registry"]
-  cache-to = ["type=registry,ref=ghcr.io/${OWNER}/cache:${FILE},mode=max,image-manifest=true,ignore-error=true"]
+  cache-to = [
+    notequal("", CHANNEL) ? "type=registry,ref=ghcr.io/${OWNER}/cache:${FILE}-${CHANNEL},mode=max,image-manifest=true,ignore-error=true" : "type=registry,ref=ghcr.io/${OWNER}/cache:${FILE},mode=max,image-manifest=true,ignore-error=true",
+  ]
   tags     = [
-    "ghcr.io/${OWNER}/${FILE}",
     "ghcr.io/${OWNER}/${FILE}:${TAG}",
-     "${OWNER}/${FILE}",
+    notequal("", CHANNEL) ? "ghcr.io/${OWNER}/${FILE}:${CHANNEL}" : "ghcr.io/${OWNER}/${FILE}",
+
      "${OWNER}/${FILE}:${TAG}",
+    notequal("", CHANNEL) ? "${OWNER}/${FILE}:${CHANNEL}" : "${OWNER}/${FILE}",
   ]
 }

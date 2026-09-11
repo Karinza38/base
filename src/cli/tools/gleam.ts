@@ -1,17 +1,11 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../install-tool/base-install.service';
-import {
-  CompressionService,
-  EnvService,
-  HttpService,
-  PathService,
-} from '../services';
-import { semverGte } from '../utils';
+import { injectFromHierarchy, injectable } from 'inversify';
+import { BaseInstallService } from '../install-tool/base-install.service.ts';
+import { semverGte } from '../utils/index.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class GleamInstallService extends BaseInstallService {
   readonly name = 'gleam';
 
@@ -22,15 +16,6 @@ export class GleamInstallService extends BaseInstallService {
       case 'amd64':
         return 'x86_64';
     }
-  }
-
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-    @inject(CompressionService) private compress: CompressionService,
-  ) {
-    super(pathSvc, envSvc);
   }
 
   override async install(version: string): Promise<void> {
@@ -74,7 +59,7 @@ export class GleamInstallService extends BaseInstallService {
   }
 
   override async test(_version: string): Promise<void> {
-    await execa(this.name, ['--version'], { stdio: ['inherit', 'inherit', 1] });
+    await this._spawn(this.name, ['--version']);
   }
 
   override async validate(version: string): Promise<boolean> {

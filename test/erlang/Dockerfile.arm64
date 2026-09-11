@@ -24,7 +24,7 @@ RUN install-containerbase
 #--------------------------------------
 FROM ${BASE_IMAGE} AS base
 
-RUN uname -p | tee | grep aarch64
+RUN arch | tee | grep aarch64
 RUN touch /.dummy
 
 ARG APT_HTTP_PROXY
@@ -38,7 +38,7 @@ ARG CONTAINERBASE_LOG_LEVEL
 FROM base AS test-erlang
 
 # renovate: datasource=github-releases packageName=containerbase/erlang-prebuild versioning=docker
-RUN install-tool erlang 27.1.2.0
+RUN install-tool erlang 28.5.0.6
 
 #--------------------------------------
 # Image: elixir
@@ -46,7 +46,7 @@ RUN install-tool erlang 27.1.2.0
 FROM test-erlang AS test-elixir
 
 # renovate: datasource=github-releases packageName=elixir-lang/elixir
-RUN install-tool elixir 1.17.3
+RUN install-tool elixir 1.20.4
 
 #--------------------------------------
 # Image: final

@@ -1,23 +1,17 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../install-tool/base-install.service';
-import { BasePrepareService } from '../prepare-tool/base-prepare.service';
-import {
-  CompressionService,
-  EnvService,
-  HttpService,
-  PathService,
-} from '../services';
+import { injectFromHierarchy, injectable } from 'inversify';
+import { BaseInstallService } from '../install-tool/base-install.service.ts';
+import { BasePrepareService } from '../prepare-tool/base-prepare.service.ts';
 import {
   initDartHome,
   initPubCache,
   prepareDartHome,
   preparePubCache,
-} from './dart/utils';
+} from './dart/utils.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class FlutterPrepareService extends BasePrepareService {
   readonly name = 'flutter';
 
@@ -62,6 +56,7 @@ export class FlutterPrepareService extends BasePrepareService {
 }
 
 @injectable()
+@injectFromHierarchy()
 export class FlutterInstallService extends BaseInstallService {
   readonly name = 'flutter';
 
@@ -72,15 +67,6 @@ export class FlutterInstallService extends BaseInstallService {
       case 'amd64':
         return 'x86_64';
     }
-  }
-
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-    @inject(CompressionService) private compress: CompressionService,
-  ) {
-    super(pathSvc, envSvc);
   }
 
   override async install(version: string): Promise<void> {
@@ -104,9 +90,7 @@ export class FlutterInstallService extends BaseInstallService {
   }
 
   override async test(_version: string): Promise<void> {
-    await execa('flutter', ['--version'], {
-      stdio: ['inherit', 'inherit', 1],
-    });
+    await this._spawn('flutter', ['--version']);
   }
 
   private async getToolPath(): Promise<string> {

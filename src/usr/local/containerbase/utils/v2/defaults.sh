@@ -8,11 +8,7 @@
 # Is used to check if all requirements are met to install the tool
 function check_tool_requirements () {
   # Sensitive default that can be overwritten by tools if needed
-  check_semver "${TOOL_VERSION}"
-  if [[ ! "${MAJOR}" || ! "${MINOR}" || ! "${PATCH}" ]]; then
-    echo Invalid version: "${TOOL_VERSION}"
-    exit 1
-  fi
+  check_semver "${TOOL_VERSION}" all
 }
 
 # Is used to check if the tool has already been installed in the given version
@@ -46,5 +42,16 @@ function init_tool() {
 # Called after install_tool and link_tool. It's always called.
 # Allow tools to do some additional stuff, like overwriting additional shell wrapper
 function post_install () {
+  true
+}
+
+# Called after install_tool and link_tool. It's not called when `SKIP_VERSION` is set.
+# Allow tools to do some testing
+function test_tool () {
+  true
+}
+
+# Uninstalls additional things from the tool with the given version
+function uninstall_tool () {
   true
 }

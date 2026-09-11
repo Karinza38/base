@@ -4,7 +4,7 @@ function install_tool () {
   local versioned_tool_path
   local file
   local arch=linux-amd64
-  if [[ "$(uname -p)" = "aarch64" ]]; then
+  if [[ "${ARCHITECTURE}" = "aarch64" ]]; then
     arch=linux-arm64
   fi
 
@@ -21,5 +21,8 @@ function link_tool () {
   versioned_tool_path=$(find_versioned_tool_path)
 
   shell_wrapper "${TOOL_NAME}" "${versioned_tool_path}/bin"
-  [[ -n $SKIP_VERSION ]] || jb --version
+}
+
+function test_tool () {
+  jb --version
 }

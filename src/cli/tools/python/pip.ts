@@ -1,19 +1,23 @@
 import { injectable } from 'inversify';
-import { ToolVersionResolver } from '../../install-tool/tool-version-resolver';
-import { PypiJson } from './schema';
+import { ToolVersionResolver } from '../../install-tool/tool-version-resolver.ts';
+import { PypiJson } from './schema.ts';
 
 @injectable()
 export abstract class PipVersionResolver extends ToolVersionResolver {
   async resolve(version: string | undefined): Promise<string | undefined> {
     if (version === undefined || version === 'latest') {
-      const meta = PypiJson.parse(
-        await this.http.getJson(
-          `https://pypi.org/pypi/${normalizePythonDepName(this.tool)}/json`,
-        ),
-      );
+      const meta = await this.fetchMeta(this.tool);
       return meta.info.version;
     }
     return version;
+  }
+
+  protected async fetchMeta(tool: string): Promise<PypiJson> {
+    return PypiJson.parse(
+      await this.http.getJson(
+        `https://pypi.org/pypi/${normalizePythonDepName(tool)}/json`,
+      ),
+    );
   }
 }
 

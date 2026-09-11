@@ -21,7 +21,7 @@ RUN install-containerbase
 
 # TODO: move to prepare for bundler and cocoapods
 # renovate: datasource=github-tags packageName=git/git
-RUN install-tool git v2.47.1
+RUN install-tool git v2.55.0
 
 #--------------------------------------
 # Image: base
@@ -39,12 +39,12 @@ COPY --chown=12021:0 test/ruby/test test
 WORKDIR /test
 
 #--------------------------------------
-# build: ruby 3.x
+# build: ruby 4.x
 #--------------------------------------
 FROM base AS build
 
-# renovate: datasource=github-releases packageName=containerbase/ruby-prebuild
-RUN install-tool ruby 3.3.6
+# renovate: datasource=github-releases packageName=containerbase/ruby-prebuild versioning=ruby
+RUN install-tool ruby 4.0.6
 
 #--------------------------------------
 # test: global bundler
@@ -74,7 +74,7 @@ FROM build AS test-bundler-c
 USER 12021
 
 # renovate: datasource=rubygems depName=bundler
-ENV BUNDLER_VERSION=2.5.23
+ENV BUNDLER_VERSION=4.0.20
 RUN install-tool bundler
 
 RUN set -ex; \
@@ -100,7 +100,7 @@ true
 FROM build AS test-bundler-d
 
 # renovate: datasource=rubygems depName=bundler
-ENV BUNDLER_VERSION=2.5.23
+ENV BUNDLER_VERSION=4.0.20
 RUN install-tool bundler
 
 RUN set -ex; ls -la /usr/local/bin/; [ $(stat --format '%u' "/usr/local/bin/bundler") -eq 12021 ]
@@ -108,10 +108,10 @@ RUN set -ex; ls -la /usr/local/bin/; [ $(stat --format '%u' "/usr/local/bin/bund
 USER 12021
 
 # install old version
-RUN install-tool ruby 3.1.0
+RUN install-tool ruby 3.4.8
 
-# renovate: datasource=rubygems depName=bundler
-ENV BUNDLER_VERSION=2.5.23
+# install old version
+ENV BUNDLER_VERSION=2.7.2
 RUN install-tool bundler
 
 
@@ -123,7 +123,7 @@ FROM build AS test-cocoapods-a
 USER 12021
 
 # renovate: datasource=rubygems
-RUN install-tool cocoapods 1.15.2
+RUN install-tool cocoapods 1.17.0
 
 RUN pod env
 

@@ -1,21 +1,12 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../install-tool/base-install.service';
-import { EnvService, HttpService, PathService } from '../services';
+import { injectFromHierarchy, injectable } from 'inversify';
+import { BaseInstallService } from '../install-tool/base-install.service.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class KubectlInstallService extends BaseInstallService {
   readonly name = 'kubectl';
-
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-  ) {
-    super(pathSvc, envSvc);
-  }
 
   override async install(version: string): Promise<void> {
     const baseUrl = `https://dl.k8s.io/release/v${version}/bin/linux/${this.envSvc.arch}/`;
@@ -55,8 +46,6 @@ export class KubectlInstallService extends BaseInstallService {
   }
 
   override async test(_version: string): Promise<void> {
-    await execa(this.name, ['version', '--client'], {
-      stdio: ['inherit', 'inherit', 1],
-    });
+    await this._spawn(this.name, ['version', '--client']);
   }
 }

@@ -4,9 +4,9 @@ ARG BASE_IMAGE=latest
 #--------------------------------------
 # Images
 #--------------------------------------
-FROM ghcr.io/containerbase/ubuntu:20.04 AS focal
 FROM ghcr.io/containerbase/ubuntu:22.04 AS jammy
 FROM ghcr.io/containerbase/ubuntu:24.04 AS noble
+FROM ghcr.io/containerbase/ubuntu:26.04 AS resolute
 
 FROM ghcr.io/containerbase/ubuntu:24.04 AS latest
 #--------------------------------------
@@ -26,14 +26,14 @@ ARG CONTAINERBASE_LOG_LEVEL
 RUN install-containerbase
 
 # renovate: datasource=github-tags packageName=git/git
-RUN install-tool git v2.47.1
+RUN install-tool git v2.55.0
 
 #--------------------------------------
 # Image: build
 #--------------------------------------
 FROM base AS build
 
-RUN uname -p | tee | grep x86_64
+RUN arch | tee | grep x86_64
 
 RUN touch /.dummy
 
@@ -45,73 +45,116 @@ RUN prepare-tool all
 FROM build AS test
 
 # renovate: datasource=github-releases packageName=bazelbuild/bazelisk
-RUN install-tool bazelisk v1.24.1
+RUN install-tool bazelisk v1.29.0
+
+# renovate: datasource=github-releases packageName=bufbuild/buf
+RUN install-tool buf v1.72.0
 
 # renovate: datasource=npm
-RUN install-tool bun 1.1.38
+RUN install-tool bun 1.4.2
 
 # renovate: datasource=docker
-RUN install-tool dart 3.5.4
+RUN install-tool dart 3.13.3
 
-# renovate: datasource=github-releases packageName=moby/moby
-RUN install-tool docker v27.3.1
+# renovate: datasource=github-releases packageName=denoland/deno
+RUN install-tool deno 2.9.6
+
+# renovate: datasource=github-releases packageName=jetify-com/devbox
+RUN install-tool devbox 0.18.0
 
 # renovate: datasource=dotnet packageName=dotnet-sdk
-RUN install-tool dotnet 8.0.404
+RUN install-tool dotnet 10.0.400
 
 # renovate: datasource=github-releases packageName=containerbase/flutter-prebuild
-RUN install-tool flutter 3.24.4
+RUN install-tool flutter 3.47.3
 
 # renovate: datasource=github-releases packageName=fluxcd/flux2
-RUN install-tool flux v2.4.0
+RUN install-tool flux v2.9.5
 
 # renovate: datasource=github-releases packageName=git-lfs/git-lfs
-RUN install-tool git-lfs v3.6.0
+RUN install-tool git-lfs v3.8.0
 
 # renovate: datasource=github-releases packageName=gleam-lang/gleam
-RUN install-tool gleam 1.6.2
+RUN install-tool gleam 1.18.1
 
 # renovate: datasource=github-releases packageName=containerbase/golang-prebuild
-RUN install-tool golang 1.23.3
+RUN install-tool golang 1.26.8
 
 # renovate: datasource=github-releases packageName=helm/helm
-RUN install-tool helm v3.16.3
+RUN install-tool helm v4.2.4
 
 # renovate: datasource=github-releases packageName=helmfile/helmfile
-RUN install-tool helmfile v0.169.1
+RUN install-tool helmfile v1.7.4
 
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
-RUN install-tool kubectl v1.31.3
+RUN install-tool kubectl v1.36.3
 
 # renovate: datasource=github-releases packageName=kubernetes-sigs/kustomize
-RUN install-tool kustomize 5.5.0
+RUN install-tool kustomize 5.8.1
+
+# renovate: datasource=github-releases packageName=jdx/mise
+RUN install-tool mise 2026.8.14
 
 # renovate: datasource=datasource=github-releases packageName=containerbase/nix-prebuild
 RUN install-tool nix 2.24.10
 
+# renovate: datasource=github-releases packageName=prefix-dev/pixi
+RUN install-tool pixi v0.76.2
+
 # renovate: datasource=github-releases packageName=PowerShell/PowerShell
-RUN install-tool powershell v7.4.6
+RUN install-tool powershell v7.6.6
 
 # renovate: datasource=docker versioning=docker
-RUN install-tool rust 1.83.0
+RUN install-tool rust 1.97.1
 
 # renovate: datasource=github-releases packageName=containerbase/skopeo-prebuild
-RUN install-tool skopeo 1.16.1
+RUN install-tool skopeo 1.24.0
 
 # renovate: datasource=github-releases packageName=getsops/sops
-RUN install-tool sops v3.9.2
+RUN install-tool sops v3.13.3
 
-# renovate: datasource=docker versioning=docker
-RUN install-tool swift 6.0.2
+# not yet supported on resolute https://github.com/swiftlang/swift-docker/issues/524
+# renovate: datasource=docker depName=swift
+ARG SWIFT_VERSION=6.3.3
+RUN set -ex; \
+  if [ "$(. /etc/os-release && echo "${VERSION_CODENAME}")" = "resolute" ]; then \
+    echo "Skipping Swift installation on resolute."; \
+  else \
+    install-tool swift; \
+  fi; \
+  true
 
 # renovate: datasource=docker packageName=hashicorp/terraform versioning=docker
-RUN install-tool terraform 1.10.0
+RUN install-tool terraform 1.15.9
+
+# renovate: datasource=github-releases packageName=opentofu/opentofu
+RUN install-tool tofu 1.12.6
 
 # renovate: datasource=github-releases packageName=jsonnet-bundler/jsonnet-bundler
 RUN install-tool jb v0.6.0
 
 # renovate: datasource=github-releases packageName=vmware-tanzu/carvel-vendir
-RUN install-tool vendir v0.42.0
+RUN install-tool vendir v0.46.1
+
+# renovate: datasource=github-releases packageName=containerbase/wally-prebuild
+RUN install-tool wally 0.3.2
+
+# renovate: datasource=github-releases packageName=protocolbuffers/protobuf versioning=docker
+RUN install-tool protoc 35.1
+
+#--------------------------------------
+# Image: test-docker
+#--------------------------------------
+FROM build AS test-docker
+
+# renovate: datasource=github-releases packageName=moby/moby
+RUN install-tool docker v28.5.2
+
+# renovate: datasource=github-releases packageName=docker/buildx
+RUN install-tool buildx v0.36.1
+
+# renovate: datasource=github-releases packageName=docker/compose
+RUN install-tool docker-compose v5.3.1
 
 #--------------------------------------
 # Image: test-erlang
@@ -119,19 +162,42 @@ RUN install-tool vendir v0.42.0
 FROM build AS test-erlang
 
 # renovate: datasource=github-releases packageName=containerbase/erlang-prebuild versioning=docker
-RUN install-tool erlang 27.1.2.0
+RUN install-tool erlang 28.5.0.6
 # renovate: datasource=github-releases packageName=elixir-lang/elixir
-RUN install-tool elixir 1.17.3
+RUN install-tool elixir 1.20.4
+
+#--------------------------------------
+# Image: test-haskell
+#--------------------------------------
+FROM build AS test-haskell
+
+# renovate: datasource=github-releases packageName=haskell/cabal versioning=docker
+RUN install-tool cabal 3.16.1.0
+# renovate: datasource=docker packageName=haskell
+RUN install-tool ghc 9.14.1
 
 #--------------------------------------
 # Image: test-java
 #--------------------------------------
 FROM build AS test-java
 
-# renovate: datasource=java-version packageName=java-jre
-RUN install-tool java 21.0.5+11.0.LTS
+# renovate: datasource=java-version packageName=java-jre?os=linux&architecture=x64
+RUN install-tool java 25.0.4+101.0.LTS
 # renovate: datasource=gradle-version packageName=gradle versioning=gradle
-RUN install-tool gradle 8.11.1
+RUN install-tool gradle 9.7.1
+# renovate: datasource=github-releases packageName=containerbase/maven-prebuild versioning=maven
+RUN install-tool maven 3.9.16
+
+#--------------------------------------
+# test: test-mono
+#--------------------------------------
+FROM build AS test-mono
+
+# renovate: datasource=github-releases packageName=containerbase/mono-prebuild
+RUN install-tool mono 6.14.1
+
+# renovate: datasource=nuget packageName=NuGet.CommandLine
+RUN install-tool nuget 7.6.0
 
 #--------------------------------------
 # Image: test-node
@@ -139,11 +205,11 @@ RUN install-tool gradle 8.11.1
 FROM build AS test-node
 
 # renovate: datasource=github-releases packageName=containerbase/node-prebuild versioning=node
-RUN install-tool node 22.11.0
+RUN install-tool node 24.19.0
 # renovate: datasource=npm
-RUN install-tool pnpm 9.14.4
+RUN install-tool pnpm 10.34.5
 # renovate: datasource=npm packageName=@yarnpkg/cli-dist
-RUN install-tool yarn 4.5.3
+RUN install-tool yarn 4.18.0
 
 #--------------------------------------
 # Image: test-php
@@ -151,9 +217,9 @@ RUN install-tool yarn 4.5.3
 FROM build AS test-php
 
 # renovate: datasource=github-releases packageName=containerbase/php-prebuild
-RUN install-tool php 8.4.1
+RUN install-tool php 8.5.10
 # renovate: datasource=github-releases packageName=containerbase/composer-prebuild
-RUN install-tool composer 2.8.3
+RUN install-tool composer 2.10.3
 
 #--------------------------------------
 # Image: test-python
@@ -161,24 +227,26 @@ RUN install-tool composer 2.8.3
 FROM build AS test-python
 
 # renovate: datasource=github-releases packageName=containerbase/python-prebuild
-RUN install-tool python 3.12.7
+RUN install-tool python 3.14.7
 
 # renovate: datasource=pypi
-RUN install-tool checkov 3.2.324
+RUN install-tool checkov 3.3.9
 # renovate: datasource=pypi
-RUN install-tool conan 2.9.3
+RUN install-tool conan 2.31.2
 # renovate: datasource=pypi
-RUN install-tool copier 9.4.1
+RUN install-tool copier 9.17.2
 # renovate: datasource=pypi
-RUN install-tool hashin 1.0.3
+RUN install-tool hashin 1.0.5
 # renovate: datasource=pypi
-RUN install-tool pipenv 2024.4.0
+RUN install-tool kas 5.2
 # renovate: datasource=pypi
-RUN install-tool pdm 2.21.0
+RUN install-tool pipenv 2026.7.1
 # renovate: datasource=pypi
-RUN install-tool poetry 1.8.4
+RUN install-tool pdm 2.28.1
 # renovate: datasource=pypi
-RUN install-tool uv 0.5.5
+RUN install-tool poetry 2.4.3
+# renovate: datasource=pypi
+RUN install-tool uv 0.12.7
 
 #--------------------------------------
 # Image: test-ruby
@@ -186,11 +254,11 @@ RUN install-tool uv 0.5.5
 FROM build AS test-ruby
 
 # renovate: datasource=github-releases packageName=containerbase/ruby-prebuild versioning=ruby
-RUN install-tool ruby 3.3.6
+RUN install-tool ruby 4.0.6
 # renovate: datasource=rubygems versioning=ruby
-RUN install-tool bundler 2.5.23
+RUN install-tool bundler 4.0.20
 # renovate: datasource=rubygems versioning=ruby
-RUN install-tool cocoapods 1.15.2
+RUN install-tool cocoapods 1.17.0
 
 #--------------------------------------
 # Image: final
@@ -198,8 +266,11 @@ RUN install-tool cocoapods 1.15.2
 FROM base
 
 COPY --from=test /.dummy /.dummy
+COPY --from=test-docker /.dummy /.dummy
 COPY --from=test-erlang /.dummy /.dummy
+COPY --from=test-haskell /.dummy /.dummy
 COPY --from=test-java /.dummy /.dummy
+COPY --from=test-mono /.dummy /.dummy
 COPY --from=test-node /.dummy /.dummy
 COPY --from=test-php /.dummy /.dummy
 COPY --from=test-python /.dummy /.dummy

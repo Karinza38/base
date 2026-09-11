@@ -36,9 +36,6 @@ ARG CONTAINERBASE_LOG_LEVEL
 #--------------------------------------
 FROM base AS build
 
-# install nginx for request testing
-RUN install-apt nginx
-
 COPY test/latest/src/ /
 
 WORKDIR /test
@@ -62,20 +59,23 @@ RUN set -ex; \
 #--------------------------------------
 # test: custom root ca
 #--------------------------------------
-FROM build AS testa
+FROM base AS testa
+
+# install nginx for request testing
+RUN install-apt nginx
 
 # renovate: datasource=github-releases packageName=containerbase/node-prebuild versioning=node
-RUN install-tool node 22.11.0
+RUN install-tool node 24.19.0
 
 # renovate: datasource=github-releases packageName=containerbase/php-prebuild
-RUN install-tool php 8.4.1
+RUN install-tool php 8.5.10
 RUN set -ex; [ $(stat --format '%u' "/usr/local/bin/php") -eq ${USER_ID} ]
 
 # renovate: datasource=github-releases packageName=PowerShell/PowerShell
-RUN install-tool powershell v7.4.6
+RUN install-tool powershell v7.6.6
 
 # renovate: datasource=github-releases depName=python packageName=containerbase/python-prebuild
-ARG PYTHON_VERSION=3.12.7
+ARG PYTHON_VERSION=3.14.7
 RUN install-tool python
 RUN set -ex; [ $(stat --format '%u' "/usr/local/bin/python") -eq ${USER_ID} ]
 
@@ -83,9 +83,15 @@ RUN set -ex; [ $(stat --format '%u' "/usr/local/bin/python") -eq ${USER_ID} ]
 RUN install-tool ruby 2.7.7
 RUN set -ex; [ $(stat --format '%u' "/usr/local/bin/ruby") -eq ${USER_ID} ]
 
+COPY --link --from=build /test /test
+COPY --link --from=build /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/default
+
+WORKDIR /test
+
 RUN set -ex; \
   openssl x509 -noout -text -in ca.pem; \
-  openssl x509 -noout -text -in renovate.pem;
+  openssl x509 -noout -text -in renovate.pem; \
+  true
 
 RUN set -ex; \
   nginx; \
@@ -135,15 +141,15 @@ ARG CONTAINERBASE_LOG_LEVEL
 ENV BASH_ENV=/usr/local/etc/env PATH=/home/$USER_NAME/bin:$PATH
 SHELL ["/bin/bash" , "-c"]
 
-COPY --from=build /test/ca.pem /usr/local/share/ca-certificates/renovate-ca.crt
+COPY --link --from=build /test/ca.pem /usr/local/share/ca-certificates/renovate-ca.crt
 
 # Set up containerbase
-COPY --from=build /usr/local/sbin/ /usr/local/sbin/
-COPY --from=build /usr/local/containerbase/ /usr/local/containerbase/
+COPY --link --from=build /usr/local/sbin/ /usr/local/sbin/
+COPY --link --from=build /usr/local/containerbase/ /usr/local/containerbase/
 RUN install-containerbase
 
 # validate custom cert
-COPY --from=build /test/renovate.pem /renovate.pem
+COPY --link --from=build /test/renovate.pem /renovate.pem
 RUN openssl verify /renovate.pem
 
 # Test start
@@ -156,7 +162,7 @@ SHELL ["/bin/sh", "-c"]
 RUN set -ex; id | grep "uid=${USER_ID}(${USER_NAME}) gid=${PRIMARY_GROUP_ID}(${USER_NAME}) groups=${USER_ID}(${USER_NAME}),0(root)"
 
 # renovate: datasource=docker packageName=hashicorp/terraform versioning=docker
-RUN install-tool terraform 1.10.0
+RUN install-tool terraform 1.15.9
 
 WORKDIR /tmp
 RUN mkdir $HOME/.tf-cache && TF_PLUGIN_CACHE_DIR=$HOME/.tf-cache terraform init
@@ -164,13 +170,13 @@ RUN mkdir $HOME/.tf-cache && TF_PLUGIN_CACHE_DIR=$HOME/.tf-cache terraform init
 #--------------------------------------
 # test: ignore tools
 #--------------------------------------
-FROM build AS testc
+FROM base AS testc
 
 RUN prepare-tool docker
 
 # TODO: move to prepare of git-lfs
 # renovate: datasource=github-tags packageName=git/git
-RUN install-tool git v2.47.1
+RUN install-tool git v2.55.0
 
 USER 12021
 
@@ -179,19 +185,19 @@ RUN set -ex; id; id | grep "uid=${USER_ID}(${USER_NAME}) gid=0(root) groups=0(ro
 ARG IGNORED_TOOLS=powershell,node
 
 # renovate: datasource=github-releases packageName=fluxcd/flux2
-RUN install-tool flux v2.4.0
+RUN install-tool flux v2.9.5
 
 # renovate: datasource=github-releases packageName=git-lfs/git-lfs
-RUN install-tool git-lfs v3.6.0
+RUN install-tool git-lfs v3.8.0
 
 # renovate: datasource=github-releases packageName=PowerShell/PowerShell
-RUN install-tool powershell v7.4.6
+RUN install-tool powershell v7.6.6
 
 # renovate: datasource=github-releases packageName=containerbase/node-prebuild versioning=node
-RUN install-tool node 22.11.0
+RUN install-tool node 24.19.0
 
 # renovate: datasource=github-releases packageName=moby/moby
-RUN install-tool docker v27.3.1
+RUN install-tool docker v28.5.2
 
 #--------------------------------------
 # test: bin path has 777
@@ -200,45 +206,75 @@ FROM base AS testd
 
 RUN [ $(stat --format '%a' "/usr/local/bin") -eq 777 ]
 
+ENV CONTAINERBASE_LOG_LEVEL=trace
 RUN prepare-tool all
 
 RUN set -ex; [ -d /usr/local/erlang ] && echo "works" || exit 1;
 
 #--------------------------------------
-# test: bazelisk, bun, vendir, helmfile, kustomize, skopeo
+# test: apm, bazelisk, buf, bun, deno, devbox, gh, helmfile, kustomize, skopeo, tofu, vendir
 #--------------------------------------
 FROM base AS teste
 
 # renovate: datasource=github-releases packageName=bazelbuild/bazelisk
-RUN install-tool bazelisk v1.24.1
+RUN install-tool bazelisk v1.29.0
+
+# renovate: datasource=github-releases packageName=bufbuild/buf
+RUN install-tool buf v1.72.0
 
 # renovate: datasource=npm
-RUN install-tool bun 1.1.38
+RUN install-tool bun 1.4.2
+
+# renovate: datasource=github-releases packageName=denoland/deno
+RUN install-tool deno 2.9.6
+
+# renovate: datasource=github-releases packageName=chainguard-dev/apko
+RUN install-tool apko 1.2.41
+
+# renovate: datasource=github-releases packageName=microsoft/apm
+RUN install-tool apm 0.28.0
+
+# renovate: datasource=github-releases packageName=jetify-com/devbox
+RUN install-tool devbox 0.18.0
+
+# renovate: datasource=github-releases depName=gh-dash packageName=dlvhdr/gh-dash
+ENV GH_DASH_EXTENSION_VERSION=v4.25.2
+# renovate: datasource=github-releases packageName=cli/cli
+RUN install-tool gh v2.98.0
 
 # renovate: datasource=github-releases packageName=gleam-lang/gleam
-RUN install-tool gleam 1.6.2
+RUN install-tool gleam 1.18.1
 
 # renovate: datasource=github-releases packageName=kubernetes/kubernetes
-RUN install-tool kubectl v1.31.3
+RUN install-tool kubectl v1.36.3
+
+# renovate: datasource=github-releases packageName=jdx/mise
+RUN install-tool mise 2026.8.14
 
 # renovate: datasource=github-releases packageName=containerbase/skopeo-prebuild
-RUN install-tool skopeo 1.16.1
+RUN install-tool skopeo 1.24.0
 
 # renovate: datasource=github-releases packageName=getsops/sops
-RUN install-tool sops v3.9.2
+RUN install-tool sops v3.13.3
+
+# renovate: datasource=github-releases packageName=opentofu/opentofu
+RUN install-tool tofu 1.12.6
+
+# renovate: datasource=github-releases packageName=protocolbuffers/protobuf versioning=docker
+RUN install-tool protoc 35.1
 
 # renovate: datasource=github-releases depName=vendir packageName=vmware-tanzu/carvel-vendir
-ARG VENDIR_VERSION=0.42.0
+ARG VENDIR_VERSION=v0.46.1
 
 # renovate: datasource=github-releases depName=helmfile packageName=helmfile/helmfile
-ARG HELMFILE_VERSION=0.169.1
+ARG HELMFILE_VERSION=v1.7.4
 
 # renovate: datasource=github-releases depName=kustomize packageName=kubernetes-sigs/kustomize
-ARG KUSTOMIZE_VERSION=5.5.0
+ARG KUSTOMIZE_VERSION=5.8.1
 
-RUN install-tool vendir "v${VENDIR_VERSION}"
+RUN install-tool vendir "${VENDIR_VERSION}"
 
-RUN install-tool helmfile "v${HELMFILE_VERSION}"
+RUN install-tool helmfile "${HELMFILE_VERSION}"
 
 RUN install-tool kustomize "${KUSTOMIZE_VERSION}"
 
@@ -250,9 +286,9 @@ RUN set -ex; kustomize version
 
 SHELL [ "/bin/sh", "-c" ]
 
-RUN vendir --version | grep "${VENDIR_VERSION}"
+RUN vendir --version | grep "${VENDIR_VERSION#v}"
 
-RUN helmfile version | grep "${HELMFILE_VERSION}"
+RUN helmfile version | grep "${HELMFILE_VERSION#v}"
 
 RUN kustomize version | grep "${KUSTOMIZE_VERSION}"
 
@@ -260,19 +296,106 @@ USER 12021
 
 RUN bazel --version
 
-RUN vendir --version | grep "${VENDIR_VERSION}"
+RUN gh --version
+RUN gh extension install dlvhdr/gh-dash --pin $GH_DASH_EXTENSION_VERSION
+RUN gh dash --version
 
-RUN helmfile version | grep "${HELMFILE_VERSION}"
+RUN vendir --version | grep "${VENDIR_VERSION#v}"
+
+RUN helmfile version | grep "${HELMFILE_VERSION#v}"
 
 RUN kustomize version | grep "${KUSTOMIZE_VERSION}"
+
+
+#--------------------------------------
+# test: db permissions
+#--------------------------------------
+FROM base AS testf
+
+# renovate: datasource=github-releases depName=protoc packageName=protocolbuffers/protobuf versioning=docker
+ARG PROTOC_VERSION=35.1
+
+RUN set -ex; \
+  ls -lah /opt/containerbase/; \
+  ls -lah /opt/containerbase/data/; \
+  install-tool protoc; \
+  true
+
+USER 12021
+
+RUN set -ex; \
+  ls -lah /opt/containerbase/; \
+  ls -lah /opt/containerbase/data/; \
+  install-tool protoc; \
+  true
+
+RUN set -ex; \
+  # install older version; \
+  install-tool protoc v25.7; \
+  # install latest version; \
+  install-tool protoc; \
+  # uninstall older version; \
+  uninstall-tool protoc v25.7; \
+  protoc --version; \
+  true
+
+#--------------------------------------
+# test: docker (rootless)
+#--------------------------------------
+FROM base AS test-docker
+
+RUN prepare-tool docker
+
+USER 12021
+
+# renovate: datasource=github-releases packageName=moby/moby
+RUN install-tool docker v28.5.2
+
+# renovate: datasource=github-releases packageName=docker/buildx
+RUN install-tool buildx v0.36.1
+
+# renovate: datasource=github-releases packageName=docker/compose
+RUN install-tool docker-compose v5.3.1
+
+RUN set -ex; \
+  docker buildx version | grep github.com/docker/buildx; \
+  docker compose version | grep 'Docker Compose version'; \
+  true;
+
+USER root
+
+RUN set -ex; \
+  docker buildx version | grep github.com/docker/buildx; \
+  docker compose version | grep 'Docker Compose version'; \
+  true;
+
+#--------------------------------------
+# test: mono (rootless)
+#--------------------------------------
+FROM base AS test-mono
+
+RUN prepare-tool mono
+
+USER 12021
+
+# renovate: datasource=github-releases packageName=containerbase/mono-prebuild
+RUN install-tool mono 6.14.1
+
+# renovate: datasource=nuget packageName=NuGet.CommandLine
+RUN install-tool nuget 7.6.0
+
+RUN nuget search nuget.commandline -Take 1
 
 #--------------------------------------
 # final
 #--------------------------------------
 FROM base
 
-COPY --from=testa /.dummy /.dummy
-COPY --from=testb-gitpod /.dummy /.dummy
-COPY --from=testc /.dummy /.dummy
-COPY --from=testd /.dummy /.dummy
-COPY --from=teste /.dummy /.dummy
+COPY --link --from=testa /.dummy /.dummy
+COPY --link --from=testb-gitpod /.dummy /.dummy
+COPY --link --from=testc /.dummy /.dummy
+COPY --link --from=testd /.dummy /.dummy
+COPY --link --from=teste /.dummy /.dummy
+COPY --link --from=testf /.dummy /.dummy
+COPY --link --from=test-docker /.dummy /.dummy
+COPY --link --from=test-mono /.dummy /.dummy

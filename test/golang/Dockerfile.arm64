@@ -21,14 +21,14 @@ RUN install-containerbase
 
 # currently go doesn't install git
 # renovate: datasource=github-tags packageName=git/git
-RUN install-tool git v2.47.1
+RUN install-tool git v2.55.0
 
 #--------------------------------------
 # Image: base
 #--------------------------------------
 FROM ${BASE_IMAGE} AS base
 
-RUN uname -p | tee | grep aarch64
+RUN arch | tee | grep aarch64
 RUN touch /.dummy
 
 ARG APT_HTTP_PROXY
@@ -42,7 +42,7 @@ ARG CONTAINERBASE_LOG_LEVEL
 FROM base AS test-golang
 
 # renovate: datasource=github-releases packageName=containerbase/golang-prebuild
-RUN install-tool golang 1.23.3
+RUN install-tool golang 1.26.8
 
 #--------------------------------------
 # Image: final

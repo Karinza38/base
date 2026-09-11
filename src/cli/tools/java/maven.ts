@@ -1,31 +1,18 @@
 import fs from 'node:fs/promises';
 import { join } from 'node:path';
 import { isNonEmptyStringAndNotWhitespace } from '@sindresorhus/is';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../../install-tool/base-install.service';
-import { ToolVersionResolver } from '../../install-tool/tool-version-resolver';
-import {
-  CompressionService,
-  EnvService,
-  HttpService,
-  PathService,
-} from '../../services';
+import { injectFromHierarchy, injectable } from 'inversify';
+import { BaseInstallService } from '../../install-tool/base-install.service.ts';
+import { ToolVersionResolver } from '../../install-tool/tool-version-resolver.ts';
 import type { HttpChecksumType } from '../../services/http.service';
-import { logger, parse } from '../../utils';
+import { logger, parse } from '../../utils/index.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class MavenInstallService extends BaseInstallService {
   readonly name = 'maven';
 
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-    @inject(CompressionService) private compress: CompressionService,
-  ) {
-    super(pathSvc, envSvc);
-  }
+  override readonly parent = 'java';
 
   override async install(version: string): Promise<void> {
     const name = this.name;
@@ -48,12 +35,12 @@ export class MavenInstallService extends BaseInstallService {
         expectedChecksum,
       });
     } else {
-      logger.info(`using archive.apache.org`);
+      logger.info(`using repo.maven.apache.org`);
       strip = 1;
-      // fallback to archive.apache.org
+      // fallback to repo.maven.apache.org
       const ver = parse(version);
       filename = `apache-${name}-${version}-bin.tar.gz`;
-      url = `https://archive.apache.org/dist/${name}/${name}-${ver.major}/${ver.version}/binaries/${filename}`;
+      url = `https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${ver.version}/${filename}`;
       checksumFileUrl = `${url}.sha512`;
       let expectedChecksum: string | undefined;
       let checksumType: HttpChecksumType | undefined;
@@ -100,10 +87,7 @@ export class MavenInstallService extends BaseInstallService {
   }
 
   override async test(_version: string): Promise<void> {
-    // pkg bug, using `node` causes module load error
-    await execa('mvn', ['--version'], {
-      stdio: ['inherit', 'inherit', 1],
-    });
+    await this._spawn('mvn', ['--version']);
   }
 
   private async readChecksum(url: string): Promise<string | undefined> {
@@ -113,6 +97,7 @@ export class MavenInstallService extends BaseInstallService {
 }
 
 @injectable()
+@injectFromHierarchy()
 export class MavenVersionResolver extends ToolVersionResolver {
   readonly tool = 'maven';
 

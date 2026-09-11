@@ -1,36 +1,26 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { execa } from 'execa';
-import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../../install-tool/base-install.service';
-import { BasePrepareService } from '../../prepare-tool/base-prepare.service';
-import {
-  CompressionService,
-  EnvService,
-  HttpService,
-  PathService,
-} from '../../services';
-import { logger, parse } from '../../utils';
+import { inject, injectFromHierarchy, injectable } from 'inversify';
+import { BaseInstallService } from '../../install-tool/base-install.service.ts';
+import { BasePrepareService } from '../../prepare-tool/base-prepare.service.ts';
+import { CompressionService, HttpService } from '../../services/index.ts';
+import { logger, parse } from '../../utils/index.ts';
 import {
   createGradleSettings,
   createMavenSettings,
   resolveJavaDownloadUrl,
   resolveLatestJavaLtsVersion,
-} from './utils';
+} from './utils.ts';
 
 @injectable()
+@injectFromHierarchy()
 export class JavaPrepareService extends BasePrepareService {
-  readonly name: string = 'java';
+  @inject(HttpService)
+  private readonly httpSvc!: HttpService;
+  @inject(CompressionService)
+  private readonly compressionSvc!: CompressionService;
 
-  constructor(
-    @inject(PathService) pathSvc: PathService,
-    @inject(EnvService) envSvc: EnvService,
-    @inject(HttpService) private readonly httpSvc: HttpService,
-    @inject(CompressionService)
-    private readonly compressionSvc: CompressionService,
-  ) {
-    super(pathSvc, envSvc);
-  }
+  readonly name: string = 'java';
 
   override async prepare(): Promise<void> {
     await this.initialize();
@@ -50,6 +40,14 @@ export class JavaPrepareService extends BasePrepareService {
     await fs.symlink(
       path.join(this.pathSvc.cachePath, '.gradle'),
       path.join(this.envSvc.userHome, '.gradle'),
+    );
+    await fs.symlink(
+      path.join(this.pathSvc.cachePath, '.android'),
+      path.join(this.envSvc.userHome, '.android'),
+    );
+    await fs.symlink(
+      path.join(this.pathSvc.cachePath, '.android-sdk'),
+      path.join(this.envSvc.userHome, '.android-sdk'),
     );
 
     const version = await resolveLatestJavaLtsVersion(
@@ -93,6 +91,8 @@ export class JavaPrepareService extends BasePrepareService {
 
     await fs.symlink(varCerts, cacerts);
 
+    await this.pathSvc.exportEnv({ ANDROID_HOME: '~/.android-sdk' });
+
     // cleanup will be done by caller
   }
 
@@ -100,7 +100,10 @@ export class JavaPrepareService extends BasePrepareService {
     await createMavenSettings(this.pathSvc);
     await createGradleSettings(this.pathSvc);
 
-    if (!(await this.pathSvc.toolEnvExists(this.name))) {
+    await this.pathSvc.createDir(`${this.pathSvc.cachePath}/.android`);
+    await this.pathSvc.createDir(`${this.pathSvc.cachePath}/.android-sdk`);
+
+    if (!(await this.pathSvc.toolEnvExists('gradle'))) {
       // fix: Failed to load native library 'libnative-platform.so' for Linux amd64.
       await this.pathSvc.exportToolEnv(
         'gradle',
@@ -112,27 +115,21 @@ export class JavaPrepareService extends BasePrepareService {
 }
 
 @injectable()
+@injectFromHierarchy()
 export class JavaJdkPrepareService extends JavaPrepareService {
   override readonly name = 'java-jdk';
 }
 
 @injectable()
+@injectFromHierarchy()
 export class JavaJrePrepareService extends JavaPrepareService {
   override readonly name = 'java-jre';
 }
 
 @injectable()
+@injectFromHierarchy()
 export class JavaInstallService extends BaseInstallService {
   override name = 'java';
-
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(HttpService) private http: HttpService,
-    @inject(CompressionService) private compress: CompressionService,
-  ) {
-    super(pathSvc, envSvc);
-  }
 
   override async install(version: string): Promise<void> {
     const type = this.name === 'java-jre' ? 'jre' : 'jdk';
@@ -191,18 +188,26 @@ export class JavaInstallService extends BaseInstallService {
   }
 
   override async test(_version: string): Promise<void> {
-    await execa('java', ['-version'], {
-      stdio: ['inherit', 'inherit', 1],
-    });
+    await this._spawn('java', ['-version']);
   }
 }
 
 @injectable()
+@injectFromHierarchy()
 export class JavaJreInstallService extends JavaInstallService {
   override readonly name = 'java-jre';
+
+  override get alias(): string {
+    return 'java';
+  }
 }
 
 @injectable()
+@injectFromHierarchy()
 export class JavaJdkInstallService extends JavaInstallService {
   override readonly name = 'java-jdk';
+
+  override get alias(): string {
+    return 'java';
+  }
 }

@@ -1,0 +1,247 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>containerbase/.github",
+    "github>containerbase/.github//merge-queue.json"
+  ],
+  "ignorePaths": ["**/node_modules/**", "test/*/test/**"],
+  "enabledManagers": [
+    "dockerfile",
+    "github-actions",
+    "nodenv",
+    "npm",
+    "custom.regex"
+  ],
+  "separateMultipleMajor": false,
+  "separateMajorMinor": true,
+  "baseBranchPatterns": ["$default", "zzz/don-not-delete"],
+  "packageRules": [
+    {
+      "description": "Don't hold back any PRs for approval",
+      "dependencyDashboardApproval": false,
+      "matchPackageNames": ["*"]
+    },
+    {
+      "description": "Hold back npm major updates in root package.json",
+      "matchUpdateTypes": ["major"],
+      "matchFileNames": ["package.json"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Disable all managers in test/ by default",
+      "matchFileNames": ["test/**"],
+      "enabled": false
+    },
+    {
+      "description": "Enable the regex manager only for test/",
+      "matchFileNames": ["test/**"],
+      "matchManagers": ["custom.regex"],
+      "enabled": true
+    },
+    {
+      "description": "Disable pin digest for test/",
+      "matchFileNames": ["test/**"],
+      "matchUpdateTypes": ["pinDigest"],
+      "enabled": false
+    },
+    {
+      "description": "Separate patch updates in test/ so that we can automerge them",
+      "matchFileNames": ["test/**"],
+      "separateMinorPatch": true
+    },
+    {
+      "description": "Don't automerge test minor/major because we might want to retain old versions in tests too",
+      "matchFileNames": ["test/**"],
+      "matchUpdateTypes": ["minor", "major"],
+      "automerge": false
+    },
+    {
+      "description": "Don't separate minor and patch updates in tests",
+      "matchFileNames": ["test/**"],
+      "matchDepNames": [
+        "apko",
+        "apm",
+        "bazelisk",
+        "buf",
+        "buildx",
+        "bun",
+        "bundler",
+        "conan",
+        "copier",
+        "corepack",
+        "dart",
+        "deno",
+        "devbox",
+        "docker",
+        "dotnet",
+        "flutter",
+        "gh",
+        "git",
+        "git-lfs",
+        "gleam",
+        "gradle",
+        "kubectl",
+        "kustomize",
+        "hashin",
+        "helm",
+        "helmfile",
+        "kas",
+        "mise",
+        "nix",
+        "node",
+        "npm",
+        "pdm",
+        "pipenv",
+        "pixi",
+        "poetry",
+        "pnpm",
+        "protoc",
+        "rake",
+        "renovate",
+        "rust",
+        "sbt",
+        "sops",
+        "swift",
+        "tofu",
+        "uv",
+        "vendir",
+        "wally",
+        "yarn"
+      ],
+      "separateMinorPatch": false
+    },
+    {
+      "description": "Automerge test selected minor updates in tests",
+      "matchFileNames": ["test/**"],
+      "matchDepNames": [
+        "apko",
+        "apm",
+        "bazelisk",
+        "buf",
+        "buildx",
+        "bun",
+        "bundler",
+        "conan",
+        "copier",
+        "corepack",
+        "dart",
+        "deno",
+        "devbox",
+        "docker",
+        "dotnet",
+        "flutter",
+        "gh",
+        "git",
+        "git-lfs",
+        "gleam",
+        "gradle",
+        "kubectl",
+        "kustomize",
+        "hashin",
+        "helm",
+        "helmfile",
+        "kas",
+        "mise",
+        "nix",
+        "node",
+        "npm",
+        "pdm",
+        "pipenv",
+        "pixi",
+        "poetry",
+        "pnpm",
+        "protoc",
+        "rake",
+        "renovate",
+        "rust",
+        "sbt",
+        "sops",
+        "swift",
+        "tofu",
+        "uv",
+        "vendir",
+        "wally",
+        "yarn"
+      ],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "description": "Trigger fix release for git updates",
+      "matchDepNames": ["git"],
+      "semanticCommitType": "fix",
+      "minimumReleaseAge": "5 days"
+    },
+    {
+      "description": "Trigger fix release for ubuntu digest updates",
+      "matchDepNames": ["ubuntu", "ghcr.io/containerbase/ubuntu"],
+      "matchUpdateTypes": ["digest"],
+      "semanticCommitType": "fix"
+    },
+    {
+      "description": "Use `build` semantic commit scope for build deps",
+      "matchDepNames": ["@yao-pkg/pkg"],
+      "semanticCommitType": "build"
+    },
+    {
+      "description": "Use `build` semantic commit scope for lockfile maintenance.",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "semanticCommitType": "build"
+    },
+    {
+      "description": "Use `chore` semantic commit scope for Actions updates",
+      "matchManagers": ["github-actions"],
+      "semanticCommitType": "chore"
+    },
+    {
+      "description": "Use `test` semantic commit scope and additionalBranchPrefix for test/",
+      "matchFileNames": ["test/**"],
+      "matchDepNames": ["!git"],
+      "additionalBranchPrefix": "test-",
+      "semanticCommitType": "test"
+    },
+    {
+      "description": "Use `test-major-` additionalBranchPrefix for test/ major updates",
+      "matchFileNames": ["test/**"],
+      "matchUpdateTypes": ["major"],
+      "matchDepNames": ["!git"],
+      "additionalBranchPrefix": "test-major-"
+    },
+    {
+      "description": "Update some deps only weekly",
+      "matchDepNames": ["checkov", "renovate"],
+      "extends": ["schedule:weekly"],
+      "automerge": true
+    },
+    {
+      "description": "Use branch merge for maintenace branches",
+      "matchBaseBranches": ["/^maint/.+/"],
+      "automergeType": "branch",
+      "prCreation": "not-pending",
+      "rebaseWhen": "auto"
+    },
+    {
+      "description": "Disable test deps on maintenance branches",
+      "matchBaseBranches": ["/^maint/.+/"],
+      "matchFileNames": ["test/**"],
+      "matchDepNames": ["!git"],
+      "enabled": false
+    },
+    {
+      "description": "Group java test deps",
+      "matchDepNames": ["java", "java-jdk", "java-jre"],
+      "matchFileNames": ["test/**"],
+      "groupName": "java"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["package.json"],
+      "matchStrings": [
+        "\"(?<depName>@yao-pkg/pkg|clipanion)@(?<currentValue>\\d+\\.\\d+\\.\\d+)\":"
+      ],
+      "datasourceTemplate": "npm"
+    }
+  ]
+}

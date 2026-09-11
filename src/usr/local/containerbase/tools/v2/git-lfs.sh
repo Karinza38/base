@@ -11,7 +11,7 @@ function install_tool () {
   local lfs_file
   local strip=0
 
-  if [[ "$(uname -p)" = "aarch64" ]]; then
+  if [[ "${ARCHITECTURE}" = "aarch64" ]]; then
     arch=linux-arm64
   fi
 
@@ -35,11 +35,13 @@ function install_tool () {
 function link_tool () {
   shell_wrapper "${TOOL_NAME}" "$(find_versioned_tool_path)/bin"
 
-  git lfs version
-
   if [ "$(is_root)" -eq 0 ]; then
     git lfs install --system
   else
     git lfs install
   fi
+}
+
+test_tool () {
+  git lfs version
 }

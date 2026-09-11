@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export NEEDS_PREPARE=1
-
 function prepare_tool() {
   local go_path
   # go suggests: git svn bzr mercurial
@@ -100,7 +98,9 @@ function link_tool () {
   versioned_tool_path=$(find_versioned_tool_path)
 
   shell_wrapper go "${versioned_tool_path}/bin" "GOBIN=\${GOBIN-${BIN_DIR}}"
+}
 
+function test_tool () {
   go version
   go env
 }

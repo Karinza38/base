@@ -1,8 +1,13 @@
-import type { InstallToolType } from '../install-tool';
+import type { InstallToolType } from '../utils';
 
 export const NoPrepareTools = [
+  'android-sdk-cmdline-tools',
+  'apko',
+  'apm',
   'bazelisk',
   'bower',
+  'buf',
+  'buildx',
   'bun',
   'bundler',
   'checkov',
@@ -10,31 +15,53 @@ export const NoPrepareTools = [
   'composer',
   'copier',
   'corepack',
+  'deno',
+  'devbox',
+  'docker-compose',
   'flux',
+  'gh',
+  'git-lfs',
   'gleam',
   'gradle',
   'hashin',
   'helm',
   'helmfile',
+  'jb',
   'kubectl',
   'kustomize',
   'lerna',
   'maven',
+  'mise',
+  'nix',
+  'nuget',
   'npm',
+  'paket',
   'pdm',
   'pip-tools',
   'pipenv',
   'pnpm',
+  'pixi',
   'poetry',
+  'protoc',
   'renovate',
+  'scala',
   'skopeo',
   'sops',
+  'terraform',
+  'tofu',
   'uv',
+  'vendir',
+  'wally',
   'yarn',
   'yarn-slim',
 ];
 
-export const NoInitTools = [...NoPrepareTools];
+export const NoInitTools = [
+  ...NoPrepareTools,
+  'erlang',
+  'powershell',
+  'python',
+];
 
 /**
  * Tools in this map are implicit mapped from `install-tool` to `install-<type>`.
@@ -46,6 +73,7 @@ export const ResolverMap: Record<string, InstallToolType | undefined> = {
   copier: 'pip',
   corepack: 'npm',
   hashin: 'pip',
+  kas: 'pip',
   npm: 'npm',
   pnpm: 'npm',
   pdm: 'pip',

@@ -1,22 +1,17 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { valid as validPep440 } from '@renovatebot/pep440';
+import { major, minor, satisfies, valid } from '@renovatebot/pep440';
 import { execa } from 'execa';
 import { parse as parseIni } from 'ini';
 import { inject, injectable } from 'inversify';
-import { BaseInstallService } from '../../install-tool/base-install.service';
-import { EnvService, PathService, VersionService } from '../../services';
-import { logger, parse, semverGte } from '../../utils';
+import { BaseInstallService } from '../../install-tool/base-install.service.ts';
+import { VersionService } from '../../services/index.ts';
+import { logger } from '../../utils/index.ts';
 
 @injectable()
 export abstract class PythonBaseInstallService extends BaseInstallService {
-  constructor(
-    @inject(EnvService) envSvc: EnvService,
-    @inject(PathService) pathSvc: PathService,
-    @inject(VersionService) protected versionSvc: VersionService,
-  ) {
-    super(pathSvc, envSvc);
-  }
+  @inject(VersionService)
+  protected readonly versionSvc!: VersionService;
 
   protected prepareEnv(_version: string): NodeJS.ProcessEnv {
     const env: NodeJS.ProcessEnv = {};
@@ -38,6 +33,8 @@ export abstract class PipBaseInstallService extends PythonBaseInstallService {
   protected tool(_version: string): string {
     return this.name;
   }
+
+  override readonly parent = 'python';
 
   override async install(version: string): Promise<void> {
     const pythonVersion = await this.getPythonVersion();
@@ -167,15 +164,11 @@ export abstract class PipBaseInstallService extends PythonBaseInstallService {
         name = 'pip-compile';
         break;
     }
-    await execa(name, ['--version'], { stdio: 'inherit' });
+    await this._spawn(name, ['--version']);
   }
 
-  override async validate(version: string): Promise<boolean> {
-    if (!validPep440(version)) {
-      return false;
-    }
-
-    return (await this.versionSvc.find('python')) !== null;
+  override validate(version: string): Promise<boolean> {
+    return Promise.resolve(!!valid(version));
   }
 
   private getPython(version: string, pythonVersion: string): string {
@@ -188,12 +181,12 @@ export abstract class PipBaseInstallService extends PythonBaseInstallService {
   }
 
   protected async getPythonVersion(): Promise<string> {
-    const version = await this.versionSvc.find('python');
+    const version = await this.versionSvc.getCurrent('python');
 
     if (!version) {
       throw new Error('Python not installed');
     }
-    return version;
+    return version.tool.version;
   }
 
   protected getAdditionalArgs(
@@ -209,16 +202,24 @@ export abstract class PipBaseInstallService extends PythonBaseInstallService {
       case 'pip-tools': {
         // keyrings.envvars added support for looking up credentials by service name only, which is needed by the Renovate pip-compile manager
         // keyrings.envvars package does not support python versions lower than 3.9
-        const pVer = parse(pythonVersion);
-        if (pVer.major > 3 || (pVer.major === 3 && pVer.minor >= 9)) {
+        if (satisfies(pythonVersion, '>=3.9')) {
           return ['keyrings.envvars>=1.1.0'];
         }
         break;
       }
       case 'poetry': {
-        if (semverGte(version, '1.2.1')) {
-          return ['poetry-plugin-pypi-mirror'];
+        const args = [];
+        if (satisfies(version, '>=1.2.1')) {
+          args.push('poetry-plugin-pypi-mirror');
         }
+        if (!satisfies(version, '>=2')) {
+          // virtualenv version v20.31.0 and v20.31.1 are not compatible with poetry < v2.
+          // v20.31.2 fixed it, but we enforce < v21 to avoid issues with a future v21.
+          // https://github.com/python-poetry/poetry/issues/10378
+          // https://github.com/pypa/virtualenv/releases/tag/20.31.2
+          args.push('virtualenv<21');
+        }
+        return args;
       }
     }
     return [];
@@ -229,12 +230,11 @@ export abstract class PipBaseInstallService extends PythonBaseInstallService {
     pythonVersion: string,
     file = 'WHEEL',
   ): string {
-    const pVer = parse(pythonVersion);
     return path.join(
       this.pathSvc.versionedToolPath(this.name, version),
       pythonVersion,
       'lib',
-      `python${pVer.major}.${pVer.minor}`,
+      `python${major(pythonVersion)}.${minor(pythonVersion)}`,
       'site-packages',
       `${this.tool(version).replaceAll(/[-_.]+/g, '_')}-${version}.dist-info`,
       file,
